@@ -39,13 +39,18 @@ dbt test   →  Done. PASS=52 WARN=7 ERROR=0     (código de saída 0)
 git clone <url-deste-repositorio>
 cd <pasta-do-repositorio>
 
-python -m venv .venv
+python3 -m venv .venv              # no Windows: python -m venv .venv
 source .venv/bin/activate          # Linux e macOS
 # .venv\Scripts\activate           # Windows (cmd)
 # .venv\Scripts\Activate.ps1       # Windows (PowerShell)
 
 pip install -r requirements.txt    # dbt-core 1.12.5 e dbt-duckdb 1.11.0
+dbt --version                      # confere a instalação
 ```
+
+Depois do `activate`, o prompt do terminal começa com `(.venv)`. **Em cada terminal novo é preciso ativar de novo** (`source .venv/bin/activate`), senão o comando `dbt` não é encontrado. Sem ativar, também funciona chamar `.venv/bin/dbt seed` e assim por diante.
+
+No Ubuntu e no Debian, o `python3 -m venv` pode falhar com `ensurepip is not available`. Nesse caso, instale o pacote do venv (`sudo apt install python3-venv`) e crie o `.venv` de novo.
 
 Não é preciso configurar nada em `~/.dbt`. O `profiles.yml` fica na raiz do projeto, e o dbt o encontra ali quando os comandos são rodados desta pasta. O projeto não usa pacotes externos, então **não é preciso rodar `dbt deps`**.
 
@@ -240,7 +245,10 @@ dbt build --target postgres
 
 | Sintoma | Causa provável | Solução |
 |---|---|---|
-| `dbt: command not found` | Ambiente virtual não ativado | Ative o `.venv` (passo 2) |
+| `dbt: command not found` (ou `Comando 'dbt' não encontrado`) | Ambiente virtual não ativado neste terminal | `source .venv/bin/activate` e confira se o prompt começa com `(.venv)` |
+| `error: externally-managed-environment` no `pip install` | `pip` rodado fora do ambiente virtual (Ubuntu e Debian bloqueiam instalar no Python do sistema) | Crie e ative o `.venv` (passo 2) antes do `pip install` |
+| `ensurepip is not available` no `python3 -m venv` | Pacote do venv não instalado (Ubuntu e Debian) | `sudo apt install python3-venv`, apague o `.venv` e crie de novo |
+| `python: command not found` | No Linux o comando costuma ser `python3` | Use `python3` |
 | `Path '~/.dbt' does not exist` ou `Could not find profile named 'cdv_dbt_challenge'` | Comando rodado fora da pasta do projeto, ou `DBT_PROFILES_DIR` definida no ambiente | Rode da raiz do projeto, ou acrescente `--profiles-dir .` ao comando |
 | `IO Error: Could not set lock on file "cdv.duckdb"` | Outro processo está com o banco aberto (`dbt docs serve`, um cliente DuckDB) | Feche o outro processo e rode de novo |
 | Avisos amarelos no `dbt test` | Esperado | Veja [O que esperar](#dbt-test) |

@@ -120,7 +120,7 @@ Rodar no Postgres revelou um bug que o DuckDB escondia: o contrato declarava as 
 ## D8. Limpeza em `stg_transactions`
 
 - **Renomear:** só `operation` vira `operation_type`. As outras colunas já estão em snake_case; renomear sem ganho de clareza só atrapalha quem compara com a fonte.
-- **Tipar com `dbt.safe_cast`:** um valor inválido vira nulo e é filtrado, em vez de derrubar o `dbt run`.
+- **Tipar com `dbt.safe_cast`:** um valor inválido (como `quantity = 'abc'`) vira nulo e é filtrado, em vez de derrubar o `dbt run`. No DuckDB isso exige um override: o `dbt.safe_cast` padrão do dbt-duckdb compila para um `cast` comum, que falha com erro de conversão. A macro `macros/safe_cast.sql` troca por `try_cast`. Validado trocando uma quantidade por `abc` numa cópia do CSV: o `dbt run` passa e a linha sai do staging. No Postgres não há `try_cast`, então lá um valor inválido ainda derruba o `dbt run`. Os dados do desafio não têm esse caso.
 - **Padronizar:** `trim`, `upper` e string vazia vira nulo (macro `clean_string`).
 - **Filtrar:** `client_id` nulo (T021), `quantity <= 0` (T037), `unit_price <= 0`, operação fora de BUY/SELL, data nula.
 - **Deduplicar por `transaction_id`:** hoje não há duplicata por ID, mas é a chave e o custo é zero.
@@ -193,6 +193,7 @@ Só lógica que realmente se repete:
 - `clean_string(col)`: `nullif(trim(col), '')`. Usada nos dois modelos de staging.
 - `deduplicate(relation, partition_by, order_by)`: `row_number()` e filtro. Usada nos dois modelos de staging.
 - `count_nulls(columns)`: soma de nulos numa lista de colunas, para escolher o registro mais completo.
+- `duckdb__safe_cast`: override do `dbt.safe_cast` com `try_cast`, para um valor inválido virar nulo no DuckDB (D8).
 - Testes genéricos `positive_value` e `unique_combination`, usados em seeds, staging, intermediate e marts.
 
 **Não virou macro:** `signed_quantity`. Seria usada num lugar só, e SQL direto é mais legível.

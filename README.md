@@ -284,7 +284,7 @@ dbt build --target postgres
 │   ├── intermediate/            int_transactions + schema.yml
 │   ├── marts/                   fact_transactions, dim_clients, mart_client_portfolio + schema.yml
 │   └── docs.md                  descrições reutilizadas
-├── macros/                      clean_string, deduplicate, count_nulls
+├── macros/                      clean_string, deduplicate, count_nulls, safe_cast
 ├── tests/
 │   ├── assert_no_negative_position.sql
 │   ├── assert_no_negative_running_position.sql

@@ -1,0 +1,47 @@
+# D19: prova pública de que o projeto roda do zero, seguindo o README.
+name: dbt
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  duckdb:
+    name: DuckDB (caminho do avaliador)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: dbt seed
+      - run: dbt run
+      - run: dbt test
+      - name: Modo estrito tem que falhar (o teste singular detecta o problema)
+        run: "! dbt test --select assert_no_negative_position --vars '{negative_position_severity: error}'"
+      - run: bash scripts/validar_alternativas.sh
+      - run: dbt docs generate
+
+  postgres:
+    name: Postgres (alternativa D5)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: dbt
+          POSTGRES_PASSWORD: dbt
+          POSTGRES_DB: cdv
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-postgres.txt
+      - run: dbt build --target postgres
+      - name: Segunda execução incremental
+        run: dbt run --target postgres --select fact_transactions

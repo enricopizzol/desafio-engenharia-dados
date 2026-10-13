@@ -15,7 +15,7 @@ Cada decisão tem um código (D1, D2...) que aparece nos comentários do código
 | D7 | Tipos dos seeds | tudo texto, tipagem no staging | (nenhuma) | |
 | D8 | Limpeza das transações | filtrar inválidos no staging | (nenhuma) | |
 | D9 | T035/T036 | manter as duas e marcar | deduplicar pelo conteúdo | `--vars '{dedup_transactions_by_content: true}'` |
-| D10 | Clientes duplicados | manter o registro mais completo (SCD tipo 1) | (nenhuma) | |
+| D10 | Clientes duplicados | manter o registro mais completo (SCD tipo 1) | SCD tipo 2 com snapshot (documentado, não implementado) | |
 | D11 | Posições negativas no mart | não filtrar | filtrar (rejeitada, só demonstração) | `--vars '{portfolio_hide_negative_positions: true}'` |
 | D12 | Significado de `net_amount` | fluxo financeiro líquido | (nenhuma) | |
 | D13 | Incremental | `delete+insert` com janela de 3 dias | `merge`, `append`; tamanho da janela | `--vars '{fact_incremental_strategy: merge, fact_lookback_days: 7}'` |
@@ -150,6 +150,55 @@ São idênticas em tudo menos no ID: C4 compra 120 ITUB4 a 28,50 em 27/03/2024.
 **Relação com SCD (Slowly Changing Dimension):** manter uma única versão por cliente equivale a um **SCD tipo 1**: a dimensão guarda só o estado atual, e o histórico se perde. No C6 isso é seguro, porque os dois registros não são duas versões no tempo (um só não tem a cidade). Em produção, se um atributo realmente mudasse (o cliente se mudou de cidade, por exemplo) e o histórico importasse, eu usaria **SCD tipo 2**: uma nova linha por versão, com `valid_from` e `valid_to`. No dbt, isso se faz com **snapshots** (`dbt snapshot`) sobre a tabela de clientes da origem, com estratégia `timestamp` (quando houver uma coluna de atualização) ou `check` (comparando as colunas). A `dim_clients` passaria a ler do snapshot, e a fact faria o join pela versão vigente na data da transação.
 
 **Por que não implementei:** o CSV é uma foto única, sem coluna de atualização nem cargas em datas diferentes, então um snapshot teria uma só versão por cliente e não mostraria nada.
+
+**Cenário: como ficaria o SCD tipo 2.** Suponha que o `clients.csv` viesse com uma coluna `updated_at` e várias versões por cliente, por exemplo o C6 se mudando de Brasília para São Paulo em 2024-06-16. A `dim_clients` passaria a ter uma linha por versão:
+
+| client_sk | client_id | client_name | city | valid_from | valid_to | is_current |
+|---|---|---|---|---|---|---|
+| `a1f…` | C6 | Felipe Nunes | Brasilia | 2023-04-30 | 2024-06-16 | false |
+| `9c4…` | C6 | Felipe Nunes | Sao Paulo | 2024-06-16 | null | true |
+
+No dbt, seriam três peças:
+
+1. **Snapshot** sobre a origem dos clientes, com estratégia `timestamp`:
+
+   ```yaml
+   # snapshots/clients_snapshot.yml
+   snapshots:
+     - name: clients_snapshot
+       relation: source('crm', 'clients')
+       config:
+         unique_key: client_id
+         strategy: timestamp
+         updated_at: updated_at
+   ```
+
+   A cada `dbt snapshot`, uma versão que mudou ganha linha nova. O dbt preenche `dbt_valid_from` e `dbt_valid_to` (nulo na versão vigente).
+
+2. **`dim_clients` lendo do snapshot**, com uma surrogate key por versão (D21) e o intervalo renomeado:
+
+   ```sql
+   select
+       {{ dbt_utils.generate_surrogate_key(['client_id', 'dbt_valid_from']) }} as client_sk,
+       client_id, client_name, city, state,
+       dbt_valid_from          as valid_from,
+       dbt_valid_to            as valid_to,
+       dbt_valid_to is null    as is_current
+   from {{ ref('clients_snapshot') }}
+   ```
+
+3. **A fato aponta para a versão vigente na data da transação**, guardando `client_sk` em vez de só `client_id`:
+
+   ```sql
+   left join {{ ref('dim_clients') }} as dim
+       on  t.client_id = dim.client_id
+       and t.transaction_date >= dim.valid_from
+       and (t.transaction_date < dim.valid_to or dim.valid_to is null)
+   ```
+
+   O intervalo é fechado no início e aberto no fim, porque o dbt grava o `valid_to` de uma versão igual ao `valid_from` da seguinte. Assim, uma compra do C6 em 2024-01-10 fica ligada à versão de Brasília e uma de 2024-07-01 à de São Paulo, e uma análise por cidade mostra onde o cliente estava quando operou.
+
+**O que mudaria nos testes:** `unique` passaria de `client_id` para `client_sk`, mais um teste de que cada `client_id` tem exatamente uma linha com `is_current = true` e de que os intervalos não se sobrepõem. O `relationships` da fato passaria a apontar para `client_sk`.
 
 ## D11. Não filtrar posições negativas no mart
 

@@ -265,7 +265,7 @@ Cada decisão, com o motivo e as alternativas, está em **[decisoes.md](decisoes
 - **Incremental com janela de 3 dias** (`>=`, não `>`) e `unique_key`, para não perder transações atrasadas nem duplicar ao reprocessar.
 - **Contratos** nos marts: nomes e tipos das colunas são garantidos no build.
 - **Marts leem da fato (estilo Kimball):** o portfólio e as métricas de atividade da `dim_clients` agregam a `fact_transactions`, a fonte única das transações publicadas. Em troca, herdam qualquer desvio do incremental (D22).
-- **Clientes duplicados viram uma linha só** (o registro mais completo), o que equivale a um **SCD tipo 1**: a dimensão guarda só o estado atual. Em produção, se o histórico importasse (um cliente que muda de cidade), eu usaria **SCD tipo 2** com `dbt snapshot` (`valid_from`/`valid_to`) e uma **surrogate key** no lugar do `client_id` original. Não implementei porque o CSV é uma foto única, sem versões para guardar. Detalhes em D10 e D21.
+- **Clientes duplicados viram uma linha só** (o registro mais completo), o que equivale a um **SCD tipo 1**: a dimensão guarda só o estado atual. Em produção, se o histórico importasse (um cliente que muda de cidade), eu usaria **SCD tipo 2** com `dbt snapshot` (`valid_from`/`valid_to`) e uma **surrogate key** no lugar do `client_id` original. Não implementei porque o CSV é uma foto única, sem versões para guardar. O D10 mostra o cenário completo: o C6 em duas versões, o snapshot, a surrogate key por versão e o join da fato pela versão vigente.
 
 ### Alternativas prontas para testar
 

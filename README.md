@@ -78,6 +78,44 @@ Os três terminam **sem erro** (código de saída 0). Se preferir um comando só
 
 ---
 
+## Fluxo de dados
+
+```mermaid
+flowchart LR
+    subgraph SEEDS["🌱 Seeds (dbt seed)"]
+        TX[transactions<br/>100 · texto]
+        CL[clients<br/>27 · texto]
+    end
+
+    subgraph STAGING["🧹 Staging (view)"]
+        STX[stg_transactions<br/>98 · tipadas]
+        SCL[stg_clients<br/>25 · deduplicadas]
+    end
+
+    subgraph INTERMEDIATE["⚙ Intermediate (view)"]
+        INT[int_transactions<br/>98 · sinais + running_quantity]
+    end
+
+    subgraph MARTS["📊 Marts"]
+        FACT[fact_transactions<br/>98 · incremental]
+        DIM[dim_clients<br/>25 · table]
+        PORT[mart_client_portfolio<br/>55 · table]
+    end
+
+    TX --> STX
+    CL --> SCL
+    STX --> INT
+    SCL --> INT
+    INT --> FACT
+    SCL --> DIM
+    INT --> DIM
+    INT --> PORT
+```
+
+**Legenda:** staging e intermediate são `view`; `dim_clients` e `mart_client_portfolio` são `table`; `fact_transactions` é `incremental`. A `dim_clients` lê de duas fontes: `stg_clients` para o cadastro e `int_transactions` para as métricas de atividade. É isso que mantém na dimensão os 15 clientes que nunca operaram.
+
+---
+
 ## O que esperar de cada comando
 
 ### `dbt seed`

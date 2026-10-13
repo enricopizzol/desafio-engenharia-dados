@@ -1,0 +1,2 @@
+-r requirements.txt
+dbt-postgres==1.11.0

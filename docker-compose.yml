@@ -1,0 +1,10 @@
+# Só para a alternativa Postgres (D5). O caminho padrão (DuckDB) não precisa disto.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: dbt
+      POSTGRES_PASSWORD: dbt
+      POSTGRES_DB: cdv
+    ports:
+      - "5432:5432"

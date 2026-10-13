@@ -225,6 +225,7 @@ Cada decisão, com o motivo e as alternativas, está em **[decisoes.md](decisoes
 - **Posições negativas não são filtradas** no mart: filtrá-las faria o teste singular passar escondendo o problema.
 - **Incremental com janela de 3 dias** (`>=`, não `>`) e `unique_key`, para não perder transações atrasadas nem duplicar ao reprocessar.
 - **Contratos** nos marts: nomes e tipos das colunas são garantidos no build.
+- **Clientes duplicados viram uma linha só** (o registro mais completo), o que equivale a um **SCD tipo 1**: a dimensão guarda só o estado atual. Em produção, se o histórico importasse (um cliente que muda de cidade), eu usaria **SCD tipo 2** com `dbt snapshot` (`valid_from`/`valid_to`) e uma **surrogate key** no lugar do `client_id` original. Não implementei porque o CSV é uma foto única, sem versões para guardar. Detalhes em D10 e D21.
 
 ### Alternativas prontas para testar
 

@@ -15,7 +15,7 @@ Cada decisão tem um código (D1, D2...) que aparece nos comentários do código
 | D7 | Tipos dos seeds | tudo texto, tipagem no staging | (nenhuma) | |
 | D8 | Limpeza das transações | filtrar inválidos no staging | (nenhuma) | |
 | D9 | T035/T036 | manter as duas e marcar | deduplicar pelo conteúdo | `--vars '{dedup_transactions_by_content: true}'` |
-| D10 | Clientes duplicados | manter o registro mais completo | (nenhuma) | |
+| D10 | Clientes duplicados | manter o registro mais completo (SCD tipo 1) | (nenhuma) | |
 | D11 | Posições negativas no mart | não filtrar | filtrar (rejeitada, só demonstração) | `--vars '{portfolio_hide_negative_positions: true}'` |
 | D12 | Significado de `net_amount` | fluxo financeiro líquido | (nenhuma) | |
 | D13 | Incremental | `delete+insert` com janela de 3 dias | `merge`, `append`; tamanho da janela | `--vars '{fact_incremental_strategy: merge, fact_lookback_days: 7}'` |
@@ -26,6 +26,7 @@ Cada decisão tem um código (D1, D2...) que aparece nos comentários do código
 | D18 | Descrições repetidas | doc blocks (`models/docs.md`) | (nenhuma) | |
 | D19 | CI | GitHub Actions, DuckDB e Postgres | (nenhuma) | |
 | D20 | Comando de execução | `seed`, `run`, `test` | `dbt build` | `dbt build` |
+| D21 | Chave da dimensão | `client_id` original | surrogate key e SCD tipo 2 (não implementadas, ver D10 e D21) | |
 
 **Resultado esperado no padrão:** `dbt seed`, `dbt run` e `dbt test` saem com código 0. O `dbt test` mostra `PASS=52 WARN=7 ERROR=0`. Os 7 avisos são os defeitos plantados (detalhados no README).
 
@@ -145,6 +146,10 @@ São idênticas em tudo menos no ID: C4 compra 120 ITUB4 a 28,50 em 27/03/2024.
 
 **Alternativa não implementada:** pegar a primeira ou a última linha do arquivo. O CSV não tem coluna de ordem ou de atualização, então "primeira" dependeria da ordem de leitura do banco, que não é garantida.
 
+**Relação com SCD (Slowly Changing Dimension):** manter uma única versão por cliente equivale a um **SCD tipo 1**: a dimensão guarda só o estado atual, e o histórico se perde. No C6 isso é seguro, porque os dois registros não são duas versões no tempo (um só não tem a cidade). Em produção, se um atributo realmente mudasse (o cliente se mudou de cidade, por exemplo) e o histórico importasse, eu usaria **SCD tipo 2**: uma nova linha por versão, com `valid_from` e `valid_to`. No dbt, isso se faz com **snapshots** (`dbt snapshot`) sobre a tabela de clientes da origem, com estratégia `timestamp` (quando houver uma coluna de atualização) ou `check` (comparando as colunas). A `dim_clients` passaria a ler do snapshot, e a fact faria o join pela versão vigente na data da transação.
+
+**Por que não implementei:** o CSV é uma foto única, sem coluna de atualização nem cargas em datas diferentes, então um snapshot teria uma só versão por cliente e não mostraria nada.
+
 ## D11. Não filtrar posições negativas no mart
 
 **Escolha:** o mart mostra todas as posições, inclusive zeradas e negativas. A coluna `position_status` (`open`, `closed`, `negative`) deixa quem consome decidir.
@@ -233,6 +238,14 @@ Dois jobs num runner limpo:
 **Escolha:** o README usa os três comandos, porque é o que o avaliador disse que vai rodar.
 
 **Alternativa validada:** `dbt build` roda tudo em ordem de dependência e também sai com código 0. Fica como dica no README.
+
+## D21. Chave da dimensão: `client_id` original
+
+**Escolha:** `dim_clients` usa o `client_id` da origem como chave, e a fact faz o join por ele.
+
+**Por quê:** com uma versão por cliente (D10) e um único sistema de origem, o ID natural é único e estável, e mantém o projeto sem pacotes externos (D6).
+
+**Em produção:** eu usaria uma **surrogate key**, uma chave gerada pelo data warehouse (no dbt, com `dbt_utils.generate_surrogate_key`, a partir do `client_id` e, no SCD tipo 2, do `valid_from`). Ela protege contra mudanças de ID na origem, permite juntar clientes de sistemas diferentes e é necessária quando a dimensão guarda várias versões do mesmo cliente.
 
 ## Problemas nos dados e onde cada um aparece
 

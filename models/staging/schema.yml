@@ -1,0 +1,68 @@
+version: 2
+
+# Contrato da camada de staging: severidade error. Estes testes têm que passar,
+# e passam porque o staging filtra e deduplica via SQL (D4, D8, D10).
+
+models:
+  - name: stg_transactions
+    description: >
+      Transações tipadas e padronizadas. Remove registros inválidos (sem cliente,
+      quantidade ou preço não positivos, operação desconhecida, data inválida).
+      Hoje saem T021 e T037: 98 linhas.
+    columns:
+      - name: transaction_id
+        description: "{{ doc('transaction_id') }}"
+        data_tests: [unique, not_null]
+      - name: client_id
+        description: "{{ doc('client_id') }}"
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_clients')
+                field: client_id
+      - name: asset_ticker
+        description: "{{ doc('asset_ticker') }}"
+        data_tests: [not_null]
+      - name: operation_type
+        description: "{{ doc('operation_type') }} Renomeada de `operation`."
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['BUY', 'SELL']
+      - name: quantity
+        description: "{{ doc('quantity') }}"
+        data_tests: [not_null, positive_value]
+      - name: unit_price
+        description: "{{ doc('unit_price') }}"
+        data_tests: [not_null, positive_value]
+      - name: transaction_date
+        description: "{{ doc('transaction_date') }}"
+        data_tests: [not_null]
+
+  - name: stg_clients
+    description: >
+      Clientes, uma linha por client_id. Em duplicatas fica o registro com menos
+      campos nulos, com desempate determinístico (C6 mantém city = Brasilia). 25 linhas.
+    columns:
+      - name: client_id
+        description: "{{ doc('client_id') }}"
+        data_tests: [unique, not_null]
+      - name: client_name
+        description: Nome do cliente. Renomeada de `name`.
+        data_tests: [not_null]
+      - name: city
+        description: Cidade do cliente.
+        data_tests: [not_null]
+      - name: state
+        description: UF do cliente, em maiúsculas.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA',
+                         'PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']
+      - name: client_created_date
+        description: Data de cadastro do cliente. Renomeada de `created_at` porque é data, não timestamp.
+        data_tests: [not_null]

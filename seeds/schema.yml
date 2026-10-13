@@ -1,0 +1,94 @@
+version: 2
+
+# Testes de qualidade da FONTE (D4). Eles descrevem os defeitos plantados nos
+# CSVs e devem disparar como WARN: sinalizar, não limpar. Para torná-los
+# bloqueantes: --vars '{source_quality_severity: error}'.
+# A chave transaction_id é contrato e fica como error.
+
+seeds:
+  - name: transactions
+    description: Transações de compra e venda de ações, exatamente como recebidas. Todas as colunas são texto (D7).
+    columns:
+      - name: transaction_id
+        description: "{{ doc('transaction_id') }}"
+        data_tests:
+          - unique
+          - not_null
+      - name: client_id
+        description: "{{ doc('client_id') }} Vazio em T021."
+        data_tests:
+          - not_null:
+              config:
+                severity: "{{ var('source_quality_severity') }}"
+          - relationships:
+              arguments:
+                to: ref('clients')
+                field: client_id
+              config:
+                severity: "{{ var('source_quality_severity') }}"
+      - name: asset_ticker
+        description: "{{ doc('asset_ticker') }}"
+        data_tests:
+          - not_null:
+              config:
+                severity: "{{ var('source_quality_severity') }}"
+      - name: operation
+        description: "{{ doc('operation_type') }}"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['BUY', 'SELL']
+              config:
+                severity: "{{ var('source_quality_severity') }}"
+      - name: quantity
+        description: "{{ doc('quantity') }} Negativa em T037."
+        data_tests:
+          - positive_value:
+              config:
+                severity: "{{ var('source_quality_severity') }}"
+      - name: unit_price
+        description: "{{ doc('unit_price') }}"
+        data_tests:
+          - positive_value:
+              config:
+                severity: "{{ var('source_quality_severity') }}"
+      - name: transaction_date
+        description: "{{ doc('transaction_date') }} Formato AAAA-MM-DD."
+    data_tests:
+      - unique_combination:
+          name: transactions_unique_content_except_id
+          arguments:
+            combination_of_columns:
+              - client_id
+              - asset_ticker
+              - operation
+              - quantity
+              - unit_price
+              - transaction_date
+          config:
+            severity: "{{ var('source_quality_severity') }}"
+
+  - name: clients
+    description: Cadastro de clientes, exatamente como recebido. Todas as colunas são texto (D7).
+    columns:
+      - name: client_id
+        description: "{{ doc('client_id') }} Repetido para C1 e C6."
+        data_tests:
+          - not_null:
+              config:
+                severity: "{{ var('source_quality_severity') }}"
+          - unique:
+              config:
+                severity: "{{ var('source_quality_severity') }}"
+      - name: name
+        description: Nome do cliente.
+      - name: city
+        description: Cidade do cliente. Vazia na segunda cópia de C6.
+        data_tests:
+          - not_null:
+              config:
+                severity: "{{ var('source_quality_severity') }}"
+      - name: state
+        description: UF do cliente.
+      - name: created_at
+        description: Data de cadastro, formato AAAA-MM-DD.

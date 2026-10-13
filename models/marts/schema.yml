@@ -100,3 +100,65 @@ models:
         data_type: boolean
         data_tests: [not_null]
 
+  - name: mart_client_portfolio
+    description: >
+      Portfólio consolidado. Grão: cliente + ativo. Inclui posições zeradas e
+      negativas, identificadas por position_status; o teste singular
+      assert_no_negative_position aponta as negativas (D3, D11).
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: portfolio_key
+        description: Chave do grão, `client_id|asset_ticker`. Permite testar unicidade sem dbt_utils.
+        data_type: text
+        constraints: [{type: not_null}]
+        data_tests: [unique, not_null]
+      - name: client_id
+        description: "{{ doc('client_id') }}"
+        data_type: text
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_clients')
+                field: client_id
+      - name: asset_ticker
+        description: "{{ doc('asset_ticker') }}"
+        data_type: text
+      - name: net_quantity
+        description: Posição líquida em quantidade, comprado menos vendido.
+        data_type: bigint
+        data_tests: [not_null]
+      - name: net_amount
+        description: "{{ doc('net_amount') }}"
+        data_type: decimal(18,2)
+      - name: total_bought_quantity
+        description: Quantidade total comprada.
+        data_type: bigint
+      - name: total_sold_quantity
+        description: Quantidade total vendida.
+        data_type: bigint
+      - name: total_bought_amount
+        description: Valor total comprado, em reais.
+        data_type: decimal(18,2)
+      - name: total_sold_amount
+        description: Valor total vendido, em reais.
+        data_type: decimal(18,2)
+      - name: avg_buy_price
+        description: Preço médio de compra ponderado pela quantidade. Nulo se o cliente só vendeu o ativo.
+        data_type: decimal(18,4)
+      - name: first_transaction_date
+        description: Data da primeira transação do cliente no ativo.
+        data_type: date
+      - name: last_transaction_date
+        description: Data da última transação do cliente no ativo.
+        data_type: date
+      - name: total_transactions
+        description: Número de transações do cliente no ativo.
+        data_type: bigint
+      - name: position_status
+        description: "`open` (quantidade > 0), `closed` (= 0) ou `negative` (< 0, vendeu mais do que comprou)."
+        data_type: text
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['open', 'closed', 'negative']

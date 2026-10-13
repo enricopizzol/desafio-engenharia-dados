@@ -1,0 +1,45 @@
+version: 2
+
+models:
+  - name: int_transactions
+    description: >
+      Transações válidas com dados do cliente e regras de negócio: quantidade e
+      valor com sinal, sinalização de possível duplicata e posição acumulada.
+      Base de todos os marts.
+    columns:
+      - name: transaction_id
+        description: "{{ doc('transaction_id') }}"
+        data_tests: [unique, not_null]
+      - name: client_id
+        description: "{{ doc('client_id') }}"
+        data_tests: [not_null]
+      - name: client_name
+        description: Nome do cliente, de `stg_clients`.
+        data_tests: [not_null]
+      - name: client_state
+        description: UF do cliente, de `stg_clients`.
+      - name: asset_ticker
+        description: "{{ doc('asset_ticker') }}"
+      - name: operation_type
+        description: "{{ doc('operation_type') }}"
+      - name: quantity
+        description: "{{ doc('quantity') }}"
+      - name: unit_price
+        description: "{{ doc('unit_price') }}"
+      - name: transaction_date
+        description: "{{ doc('transaction_date') }}"
+      - name: signed_quantity
+        description: "{{ doc('signed_quantity') }}"
+        data_tests: [not_null]
+      - name: gross_amount
+        description: "{{ doc('gross_amount') }}"
+        data_tests: [not_null, positive_value]
+      - name: is_possible_duplicate
+        description: "{{ doc('is_possible_duplicate') }}"
+        data_tests: [not_null]
+      - name: signed_amount
+        description: "{{ doc('signed_amount') }}"
+      - name: running_quantity
+        description: >
+          Posição acumulada do cliente no ativo até esta transação, inclusive,
+          em ordem de data e ID. Base do teste assert_no_negative_running_position.

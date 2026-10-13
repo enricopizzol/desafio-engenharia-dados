@@ -1,0 +1,45 @@
+version: 2
+
+# Marts com contrato aplicado (D16): nomes e tipos das colunas são garantidos
+# no build; uma mudança de tipo quebra o `dbt run` em vez de chegar ao consumidor.
+
+models:
+  - name: dim_clients
+    description: >
+      Dimensão de clientes. Grão: uma linha por cliente (25), inclusive os que
+      nunca operaram (C11 a C25).
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: client_id
+        description: "{{ doc('client_id') }}"
+        data_type: text
+        constraints: [{type: not_null}]
+        data_tests: [unique, not_null]
+      - name: client_name
+        description: Nome do cliente.
+        data_type: text
+      - name: city
+        description: Cidade do cliente.
+        data_type: text
+      - name: state
+        description: UF do cliente.
+        data_type: text
+      - name: client_created_date
+        description: Data de cadastro do cliente.
+        data_type: date
+      - name: first_transaction_date
+        description: Data da primeira transação válida. Nula se o cliente nunca operou.
+        data_type: date
+      - name: last_transaction_date
+        description: Data da última transação válida. Nula se o cliente nunca operou.
+        data_type: date
+      - name: total_transactions
+        description: Número de transações válidas do cliente.
+        data_type: bigint
+        data_tests: [not_null]
+      - name: has_transactions
+        description: Verdadeiro se o cliente tem ao menos uma transação válida.
+        data_type: boolean
+        data_tests: [not_null]
+

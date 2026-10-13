@@ -36,19 +36,24 @@ vars:
 
 seeds:
   cdv_dbt_challenge:
-    # D7: seeds carregados como texto; a tipagem acontece no staging
-    +column_types:
-      transaction_id: varchar
-      client_id: varchar
-      asset_ticker: varchar
-      operation: varchar
-      quantity: varchar
-      unit_price: varchar
-      transaction_date: varchar
-      name: varchar
-      city: varchar
-      state: varchar
-      created_at: varchar
+    # D7: seeds carregados como texto; a tipagem acontece no staging.
+    # Os tipos ficam por seed: o dbt avisa quando uma coluna listada não existe no CSV.
+    transactions:
+      +column_types:
+        transaction_id: varchar
+        client_id: varchar
+        asset_ticker: varchar
+        operation: varchar
+        quantity: varchar
+        unit_price: varchar
+        transaction_date: varchar
+    clients:
+      +column_types:
+        client_id: varchar
+        name: varchar
+        city: varchar
+        state: varchar
+        created_at: varchar
 
 models:
   cdv_dbt_challenge:

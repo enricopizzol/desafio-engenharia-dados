@@ -33,6 +33,18 @@ dbt test   →  Done. PASS=52 WARN=7 ERROR=0     (código de saída 0)
 - **git**.
 - Nada mais. O banco é **DuckDB**: um arquivo local (`cdv.duckdb`) criado na primeira execução. Não precisa de Docker, servidor nem credenciais.
 
+### Atalho (Linux e macOS)
+
+Um comando só cria o ambiente virtual, instala as dependências e roda `dbt seed`, `dbt run` e `dbt test`, sem precisar ativar nada:
+
+```bash
+git clone <url-deste-repositorio>
+cd <pasta-do-repositorio>
+bash scripts/rodar.sh
+```
+
+Os passos abaixo fazem o mesmo, manualmente.
+
 ### 2. Instalação
 
 ```bash
@@ -277,7 +289,9 @@ dbt build --target postgres
 │   ├── assert_no_negative_position.sql
 │   ├── assert_no_negative_running_position.sql
 │   └── generic/                 positive_value, unique_combination
-├── scripts/validar_alternativas.sh
+├── scripts/
+│   ├── rodar.sh                 atalho: instala e roda seed, run e test
+│   └── validar_alternativas.sh  confere cada alternativa do decisoes.md
 ├── docker-compose.yml           só para a alternativa Postgres
 └── .github/workflows/dbt.yml    CI: roda os três comandos num ambiente limpo
 ```

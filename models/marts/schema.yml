@@ -4,6 +4,63 @@ version: 2
 # no build; uma mudança de tipo quebra o `dbt run` em vez de chegar ao consumidor.
 
 models:
+  - name: fact_transactions
+    description: >
+      Fato de transações. Grão: uma linha por transação válida (98 hoje).
+      Incremental com janela de reprocessamento (D13).
+    config:
+      contract: {enforced: true}
+    columns:
+      - name: transaction_id
+        description: "{{ doc('transaction_id') }}"
+        data_type: text
+        constraints: [{type: not_null}]
+        data_tests: [unique, not_null]
+      - name: client_id
+        description: "{{ doc('client_id') }}"
+        data_type: text
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_clients')
+                field: client_id
+      - name: asset_ticker
+        description: "{{ doc('asset_ticker') }}"
+        data_type: text
+        data_tests: [not_null]
+      - name: operation_type
+        description: "{{ doc('operation_type') }}"
+        data_type: text
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['BUY', 'SELL']
+      - name: transaction_date
+        description: "{{ doc('transaction_date') }}"
+        data_type: date
+        data_tests: [not_null]
+      - name: quantity
+        description: "{{ doc('quantity') }}"
+        data_type: integer
+        data_tests: [positive_value]
+      - name: signed_quantity
+        description: "{{ doc('signed_quantity') }}"
+        data_type: integer
+      - name: unit_price
+        description: "{{ doc('unit_price') }}"
+        data_type: decimal(18,4)
+        data_tests: [positive_value]
+      - name: gross_amount
+        description: "{{ doc('gross_amount') }}"
+        data_type: decimal(18,2)
+      - name: signed_amount
+        description: "{{ doc('signed_amount') }}"
+        data_type: decimal(18,2)
+      - name: is_possible_duplicate
+        description: "{{ doc('is_possible_duplicate') }}"
+        data_type: boolean
+
   - name: dim_clients
     description: >
       Dimensão de clientes. Grão: uma linha por cliente (25), inclusive os que

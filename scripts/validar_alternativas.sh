@@ -80,7 +80,10 @@ check "full refresh (append)" 0 dbt run --select fact_transactions --full-refres
 check "segunda execução incremental (append)" 0 dbt run --select fact_transactions --vars '{fact_incremental_strategy: append}'
 expect_count "append duplica a janela (98 + transações dos últimos 3 dias)" 100 "select count(*) from main.fact_transactions"
 check "append: teste unique da fact falha (código 1)" 1 dbt test --select fact_transactions
-check "volta ao padrão" 0 dbt run --select fact_transactions --full-refresh
+check "append: marts relidos da fato" 0 dbt run --select fact_transactions+ --exclude fact_transactions
+expect_count "append: portfólio herda as duplicatas da fato (D22)" 100 "select sum(total_transactions) from main.mart_client_portfolio"
+check "volta ao padrão" 0 dbt run --select fact_transactions+ --full-refresh
+expect_count "portfólio de volta a 98 transações" 98 "select sum(total_transactions) from main.mart_client_portfolio"
 
 echo "== D13: transação atrasada com data já carregada"
 cp seeds/transactions.csv /tmp/transactions.csv.bak

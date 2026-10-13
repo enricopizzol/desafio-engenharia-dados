@@ -1,10 +1,11 @@
 {#- Grão: cliente + ativo. Posições negativas e zeradas NÃO são filtradas
     (D11): o teste singular precisa vê-las e position_status deixa o
     consumidor decidir. A var portfolio_hide_negative_positions existe só para
-    demonstrar a alternativa rejeitada. -#}
+    demonstrar a alternativa rejeitada.
+    Lê da fato (D22, estilo Kimball): o mart agrega o que a fato publica. -#}
 with transactions as (
 
-    select * from {{ ref('int_transactions') }}
+    select * from {{ ref('fact_transactions') }}
 
 ),
 

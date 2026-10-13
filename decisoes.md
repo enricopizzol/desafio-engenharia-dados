@@ -1,6 +1,6 @@
 # Decisões do projeto
 
-Cada decisão tem um código (D1, D2...) que aparece nos comentários do código. Para cada uma: o que foi escolhido, por quê, quais as alternativas e como ativá-las. Sempre que foi possível, a alternativa foi **implementada** atrás de uma variável do dbt (`--vars`) ou de um target, e **validada** pelo script `scripts/validar_alternativas.sh` (39 verificações, todas OK com dbt-core 1.12.5 e dbt-duckdb 1.11.0; Postgres validado com dbt-postgres 1.11.0 e Postgres 16).
+Cada decisão tem um código (D1, D2...) que aparece nos comentários do código. Para cada uma: o que foi escolhido, por quê, quais as alternativas e como ativá-las. Sempre que foi possível, a alternativa foi **implementada** atrás de uma variável do dbt (`--vars`) ou de um target, e **validada** pelo script `scripts/validar_alternativas.sh` (42 verificações, todas OK com dbt-core 1.12.5 e dbt-duckdb 1.11.0; Postgres validado com dbt-postgres 1.11.0 e Postgres 16).
 
 ## Resumo
 
@@ -27,6 +27,7 @@ Cada decisão tem um código (D1, D2...) que aparece nos comentários do código
 | D19 | CI | GitHub Actions, DuckDB e Postgres | (nenhuma) | |
 | D20 | Comando de execução | `seed`, `run`, `test` | `dbt build` | `dbt build` |
 | D21 | Chave da dimensão | `client_id` original | surrogate key e SCD tipo 2 (não implementadas, ver D10 e D21) | |
+| D22 | De onde os marts leem | portfólio e atividade da `dim_clients` leem da fato (Kimball) | ler do intermediate (não implementada) | |
 
 **Resultado esperado no padrão:** `dbt seed`, `dbt run` e `dbt test` saem com código 0. O `dbt test` mostra `PASS=52 WARN=7 ERROR=0`. Os 7 avisos são os defeitos plantados (detalhados no README).
 
@@ -246,6 +247,16 @@ Dois jobs num runner limpo:
 **Por quê:** com uma versão por cliente (D10) e um único sistema de origem, o ID natural é único e estável, e mantém o projeto sem pacotes externos (D6).
 
 **Em produção:** eu usaria uma **surrogate key**, uma chave gerada pelo data warehouse (no dbt, com `dbt_utils.generate_surrogate_key`, a partir do `client_id` e, no SCD tipo 2, do `valid_from`). Ela protege contra mudanças de ID na origem, permite juntar clientes de sistemas diferentes e é necessária quando a dimensão guarda várias versões do mesmo cliente.
+
+## D22. Marts leem da fato (estilo Kimball)
+
+**Escolha:** `mart_client_portfolio` e as métricas de atividade da `dim_clients` (primeira e última transação, total) leem da `fact_transactions`, não do `int_transactions`. O cadastro da `dim_clients` continua vindo do `stg_clients`.
+
+**Por quê:** é o desenho dimensional clássico: a fato é a fonte única das transações publicadas, e tudo que agrega transações parte dela. O portfólio fica sempre consistente com a fato que o consumidor também consulta, e a linhagem fica mais simples de explicar. Nenhuma métrica foi perdida, porque a fato já tem todas as colunas de que os dois modelos precisam. Um `ref()` a um modelo incremental lê a tabela inteira (as 98 linhas), não só a janela de reprocessamento, então os números não mudaram: portfólio com 55 linhas, `dim_clients` com 25 e `dbt test` com `PASS=52 WARN=7`.
+
+**Custo:** o portfólio herda qualquer desvio do incremental. Validado: com a estratégia `append` (D13), a fato fica com 100 linhas e o portfólio, relido dela, também passa a contar 100 transações. Uma correção retroativa fora da janela (limitação do D13) também não chegaria ao portfólio até um `--full-refresh`.
+
+**Alternativa não implementada:** os marts lerem direto do `int_transactions`, como irmãos da fato. O portfólio seria sempre recalculado da fonte completa e não herdaria limitações do incremental, ao custo de duas linhas de cálculo paralelas que podem divergir. O teste `assert_no_negative_running_position` continua no `int_transactions`, porque a posição acumulada (`running_quantity`) é uma coluna de trabalho que a fato não publica.
 
 ## Problemas nos dados e onde cada um aparece
 

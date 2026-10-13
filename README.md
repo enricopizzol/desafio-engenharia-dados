@@ -108,11 +108,11 @@ flowchart LR
     SCL --> INT
     INT --> FACT
     SCL --> DIM
-    INT --> DIM
-    INT --> PORT
+    FACT --> DIM
+    FACT --> PORT
 ```
 
-**Legenda:** staging e intermediate são `view`; `dim_clients` e `mart_client_portfolio` são `table`; `fact_transactions` é `incremental`. A `dim_clients` lê de duas fontes: `stg_clients` para o cadastro e `int_transactions` para as métricas de atividade. É isso que mantém na dimensão os 15 clientes que nunca operaram.
+**Legenda:** staging e intermediate são `view`; `dim_clients` e `mart_client_portfolio` são `table`; `fact_transactions` é `incremental`. Os marts seguem o estilo Kimball: o portfólio e as métricas de atividade da `dim_clients` leem da fato (D22). A `dim_clients` lê de duas fontes: `stg_clients` para o cadastro e `fact_transactions` para as métricas de atividade. É isso que mantém na dimensão os 15 clientes que nunca operaram.
 
 ---
 
@@ -199,9 +199,10 @@ Nesse modo o `dbt test` termina com erro (código 1), mostrando que o teste sing
 ```
 seeds                staging              intermediate           marts
 transactions ──────► stg_transactions ──┐
-                                        ├──► int_transactions ──┬──► fact_transactions (incremental)
-clients ───────────► stg_clients ───────┤                       ├──► mart_client_portfolio
-                                        └───────────────────────┴──► dim_clients
+                                        ├──► int_transactions ─────► fact_transactions (incremental)
+clients ───────────► stg_clients ───────┤                                │
+                                        │                                ├──► mart_client_portfolio
+                                        └────────────────────────────────┴──► dim_clients
 ```
 
 | Modelo | Materialização | Grão | Linhas | O que faz |
@@ -210,8 +211,8 @@ clients ───────────► stg_clients ───────�
 | `stg_clients` | view | cliente | 25 | Tipa, padroniza e deduplica, mantendo o registro mais completo (C6 fica com a cidade) |
 | `int_transactions` | view | transação | 98 | Junta com clientes; calcula quantidade e valor com sinal, posição acumulada e marca possíveis duplicatas |
 | `fact_transactions` | incremental | transação | 98 | Fato de transações |
-| `dim_clients` | table | cliente | 25 | Dimensão, inclusive os 15 clientes sem transação |
-| `mart_client_portfolio` | table | cliente + ativo | 55 | Posição líquida por cliente e ativo |
+| `dim_clients` | table | cliente | 25 | Dimensão, inclusive os 15 clientes sem transação; atividade calculada da fato |
+| `mart_client_portfolio` | table | cliente + ativo | 55 | Posição líquida por cliente e ativo, agregada da fato |
 
 No `mart_client_portfolio`:
 - `net_quantity` = quantidade comprada − quantidade vendida.
@@ -263,6 +264,7 @@ Cada decisão, com o motivo e as alternativas, está em **[decisoes.md](decisoes
 - **Posições negativas não são filtradas** no mart: filtrá-las faria o teste singular passar escondendo o problema.
 - **Incremental com janela de 3 dias** (`>=`, não `>`) e `unique_key`, para não perder transações atrasadas nem duplicar ao reprocessar.
 - **Contratos** nos marts: nomes e tipos das colunas são garantidos no build.
+- **Marts leem da fato (estilo Kimball):** o portfólio e as métricas de atividade da `dim_clients` agregam a `fact_transactions`, a fonte única das transações publicadas. Em troca, herdam qualquer desvio do incremental (D22).
 - **Clientes duplicados viram uma linha só** (o registro mais completo), o que equivale a um **SCD tipo 1**: a dimensão guarda só o estado atual. Em produção, se o histórico importasse (um cliente que muda de cidade), eu usaria **SCD tipo 2** com `dbt snapshot` (`valid_from`/`valid_to`) e uma **surrogate key** no lugar do `client_id` original. Não implementei porque o CSV é uma foto única, sem versões para guardar. Detalhes em D10 e D21.
 
 ### Alternativas prontas para testar

@@ -1,4 +1,5 @@
-{#- Uma linha por cliente, incluindo quem nunca operou (C11 a C25). -#}
+{#- Uma linha por cliente, incluindo quem nunca operou (C11 a C25).
+    Cadastro vem do staging; métricas de atividade vêm da fato (D22). -#}
 with clients as (
 
     select * from {{ ref('stg_clients') }}
@@ -12,7 +13,7 @@ activity as (
         min(transaction_date) as first_transaction_date,
         max(transaction_date) as last_transaction_date,
         count(*)              as total_transactions
-    from {{ ref('int_transactions') }}
+    from {{ ref('fact_transactions') }}
     group by client_id
 
 )

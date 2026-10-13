@@ -1,0 +1,10 @@
+# Fica na raiz do projeto: o dbt procura profiles.yml no diretório atual antes
+# de ~/.dbt, então quem avalia não precisa configurar nada.
+cdv_dbt_challenge:
+  target: dev
+  outputs:
+    # Padrão (D5): DuckDB em arquivo local, zero infraestrutura.
+    dev:
+      type: duckdb
+      path: "{{ env_var('DBT_DUCKDB_PATH', 'cdv.duckdb') }}"
+      threads: 4

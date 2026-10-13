@@ -29,6 +29,7 @@ select
 from {{ ref('int_transactions') }}
 
 {% if is_incremental() %}
+-- reprocessa os últimos fact_lookback_days dias (>= para pegar atrasadas)
 where transaction_date >= (
     select {{ dbt.dateadd('day', -1 * var('fact_lookback_days') | int, 'max(transaction_date)') }}
     from {{ this }}

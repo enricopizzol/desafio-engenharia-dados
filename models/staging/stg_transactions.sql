@@ -8,6 +8,7 @@ with source as (
 
 renamed as (
 
+    -- clean_string: trim + string vazia vira nulo; safe_cast: valor inválido vira nulo
     select
         upper({{ clean_string('transaction_id') }})                       as transaction_id,
         upper({{ clean_string('client_id') }})                            as client_id,
@@ -28,7 +29,7 @@ valid as (
       and client_id is not null                 -- T021
       and asset_ticker is not null
       and operation_type in ('BUY', 'SELL')
-      and quantity > 0                          -- T037
+      and quantity > 0                          -- T037 (BUY de -50)
       and unit_price > 0
       and transaction_date is not null
 
@@ -36,6 +37,7 @@ valid as (
 
 deduplicated as (
 
+    -- deduplicate por transaction_id: hoje não há repetição, mas é a chave
     {{ deduplicate('valid', 'transaction_id', 'transaction_date, client_id') }}
 
 )

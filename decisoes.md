@@ -87,7 +87,7 @@ Um detalhe que o teste das alternativas revelou: **limiares só funcionam com se
 - **Testes em staging, intermediate e marts**, severidade `error`: são o contrato dos modelos. Passam porque o staging filtra e deduplica via SQL.
 - A chave `transaction_id` do seed é exceção: fica `error`, porque sem chave única nada a jusante faz sentido.
 
-**Por quê:** é como o dbt separa "o dado que recebo está ruim" de "o modelo que eu entrego está errado". "Não limpar manualmente" significa não editar o CSV; filtrar no staging é pedido pelo requisito 1.
+**Por quê:** é como o dbt separa "o dado que recebo está ruim" de "o modelo que eu entrego está errado". A leitura é direta: quando um teste da fonte (`warn`) aponta um defeito e o teste equivalente do staging (`error`) passa, o staging resolveu o problema no SQL, sem editar o CSV. Exemplo: `not_null_transactions_client_id` avisa sobre a T021, e `not_null_stg_transactions_client_id` passa porque a T021 foi filtrada. "Não limpar manualmente" significa não editar o CSV; filtrar no staging é pedido pelo requisito 1.
 
 **Alternativa implementada:** testes da fonte bloqueantes, `--vars '{source_quality_severity: error}'`. Validado: os testes do seed falham (código 1) e os das camadas seguem passando.
 
@@ -143,7 +143,7 @@ São idênticas em tudo menos no ID: C4 compra 120 ITUB4 a 28,50 em 27/03/2024.
 
 **Escolha:** uma linha por `client_id`, ficando o registro com menos campos nulos (macro `count_nulls`), com desempate por data de cadastro, nome e cidade para o resultado ser sempre o mesmo.
 
-**Resultado validado:** C1 fica com uma linha; C6 fica com `city = Brasilia`, não com a cópia sem cidade.
+**Resultado validado:** de 27 para 25 linhas. C1 aparece duas vezes idêntico e fica com uma linha; C6 aparece com e sem cidade e fica com `city = Brasilia`, não com a cópia sem cidade. A ordem do `deduplicate` é: menos nulos (`count_nulls`), depois `client_created_date`, `client_name` e `city`.
 
 **Alternativa não implementada:** pegar a primeira ou a última linha do arquivo. O CSV não tem coluna de ordem ou de atualização, então "primeira" dependeria da ordem de leitura do banco, que não é garantida.
 

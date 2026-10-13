@@ -7,6 +7,7 @@ with source as (
 
 renamed as (
 
+    -- clean_string: trim + string vazia vira nulo; safe_cast: valor inválido vira nulo
     select
         upper({{ clean_string('client_id') }})                      as client_id,
         {{ clean_string('name') }}                                  as client_name,
@@ -25,6 +26,9 @@ valid as (
 
 deduplicated as (
 
+    -- deduplicate: row_number() por client_id, fica a 1ª linha.
+    -- Ordem: menos nulos (count_nulls), depois data de cadastro, nome e cidade.
+    -- C1 (cópia idêntica) e C6 (cópia sem cidade): 27 -> 25 linhas.
     {{ deduplicate(
         'valid',
         'client_id',

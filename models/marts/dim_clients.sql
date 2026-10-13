@@ -8,6 +8,7 @@ with clients as (
 
 activity as (
 
+    -- resumo de atividade por cliente
     select
         client_id,
         min(transaction_date) as first_transaction_date,
@@ -26,8 +27,8 @@ select
     clients.client_created_date,
     activity.first_transaction_date,
     activity.last_transaction_date,
-    coalesce(activity.total_transactions, 0) as total_transactions,
+    coalesce(activity.total_transactions, 0) as total_transactions,  -- 0 para quem nunca operou
     activity.client_id is not null           as has_transactions
 from clients
-left join activity
+left join activity  -- left join mantém os 15 clientes sem transação
     on clients.client_id = activity.client_id

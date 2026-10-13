@@ -19,6 +19,7 @@ flagged as (
 
     select
         transactions.*,
+        -- quantas transações têm o mesmo conteúdo (T035/T036 = 2)
         count(*) over (
             partition by client_id, asset_ticker, operation_type,
                          quantity, unit_price, transaction_date
@@ -55,11 +56,13 @@ enriched as (
         kept.unit_price,
         kept.transaction_date,
 
+        -- compra soma, venda subtrai
         case kept.operation_type
             when 'BUY' then kept.quantity
             when 'SELL' then -kept.quantity
         end as signed_quantity,
 
+        -- valor bruto da operação, sempre positivo
         cast(kept.quantity * kept.unit_price as decimal(18,2)) as gross_amount,
 
         kept.duplicate_group_size > 1 as is_possible_duplicate
@@ -71,7 +74,9 @@ enriched as (
 
 select
     *,
+    -- fluxo financeiro com sinal: compra positiva, venda negativa (D12)
     cast(sign(signed_quantity) * gross_amount as decimal(18,2)) as signed_amount,
+    -- posição acumulada por cliente e ativo, transação a transação (D17)
     sum(signed_quantity) over (
         partition by client_id, asset_ticker
         order by transaction_date, transaction_id

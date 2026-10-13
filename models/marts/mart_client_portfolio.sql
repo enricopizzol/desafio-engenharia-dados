@@ -14,7 +14,9 @@ aggregated as (
     select
         client_id,
         asset_ticker,
+        -- posição: compras menos vendas (o teste singular olha esta coluna)
         cast(sum(signed_quantity) as bigint)                                as net_quantity,
+        -- fluxo financeiro líquido; negativo com posição positiva = lucro realizado
         cast(sum(signed_amount) as decimal(18,2))                           as net_amount,
         cast(sum(case when operation_type = 'BUY'  then quantity else 0 end) as bigint) as total_bought_quantity,
         cast(sum(case when operation_type = 'SELL' then quantity else 0 end) as bigint) as total_sold_quantity,
@@ -40,6 +42,7 @@ final as (
         total_sold_quantity,
         total_bought_amount,
         total_sold_amount,
+        -- preço médio de compra (só compras entram)
         cast(
             case when total_bought_quantity > 0
                  then total_bought_amount / total_bought_quantity

@@ -4,7 +4,7 @@ Projeto dbt que transforma as transações e o cadastro de clientes de uma corre
 
 Os dados de entrada têm problemas de qualidade de propósito. Os CSVs estão em `seeds/` **exatamente como foram baixados**. Os testes do projeto sinalizam cada problema, e o staging filtra os registros inválidos via SQL.
 
-**Vídeo de apresentação:** [assistir no Google Drive](https://drive.google.com/file/d/1wG6KXZAAUphUYkLvi9Ert0T8TFfiS2T7/view?usp=sharing)
+**Vídeo de apresentação:** [assistir no Google Drive](https://drive.google.com/file/d/1B_3O4Z2NUMKooc65FSd9eFV9so-KvIn4/view?usp=sharing)
 
 ---
 

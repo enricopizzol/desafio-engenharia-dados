@@ -13,28 +13,27 @@ clean-targets: ["target", "dbt_packages", "logs"]
 flags:
   send_anonymous_usage_stats: false
 
-# Todas as alternativas do doc de decisões (decisoes.md) são controladas por
-# estas variáveis. Os valores abaixo são o comportamento padrão.
+# Valores padrão das variáveis do projeto; podem ser trocados com --vars.
 vars:
-  # D3: severidade do teste singular de posição negativa (warn | error)
+  # Severidade do teste assert_no_negative_position: warn ou error
   negative_position_severity: warn
-  # D3 (alternativa "limiares"): condições do dbt para warn/error.
-  # error_if só é avaliado quando a severidade é error.
+  # Quantidade de linhas que dispara o aviso e o erro desse teste.
+  # O error_if só é avaliado quando a severidade é error.
   negative_position_warn_if: "!= 0"
   negative_position_error_if: "!= 0"
-  # D4: severidade dos testes de qualidade da fonte, nos seeds (warn | error)
+  # Severidade dos testes de qualidade dos seeds: warn ou error
   source_quality_severity: warn
-  # D9: T035/T036 — false mantém as duas e marca; true deduplica pelo conteúdo
+  # true: transações com o mesmo conteúdo ficam só com a de menor ID
   dedup_transactions_by_content: false
-  # D11 (rejeitada, só para demonstração): esconder posições negativas no mart
+  # true: o mart_client_portfolio remove as posições com net_quantity negativa
   portfolio_hide_negative_positions: false
-  # D13: incremental da fact
+  # Dias reprocessados a cada execução incremental da fact_transactions
   fact_lookback_days: 3
 
 seeds:
   cdv_dbt_challenge:
-    # D7: seeds carregados como texto; a tipagem acontece no staging.
-    # Os tipos ficam por seed: o dbt avisa quando uma coluna listada não existe no CSV.
+    # Todas as colunas dos seeds são carregadas como texto; a tipagem é feita no staging.
+    # Os tipos são definidos por seed porque o dbt avisa quando uma coluna listada não existe no CSV.
     transactions:
       +column_types:
         transaction_id: varchar

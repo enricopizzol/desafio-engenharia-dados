@@ -1,11 +1,12 @@
-{#- Teste singular exigido pelo enunciado: nenhum cliente pode terminar com
-    quantidade líquida negativa em um ativo.
+{#- Devolve as posições com quantidade líquida negativa (net_quantity < 0)
+    no mart_client_portfolio.
 
-    D3: severidade warn por padrão, para que `dbt test` detecte (WARN + linhas
-    gravadas no schema de auditoria) sem sair com erro. Modo estrito:
+    A severidade vem de negative_position_severity (warn por padrão): com
+    warn, o dbt test mostra o aviso e grava as linhas no schema de auditoria
+    sem sair com erro. Para reprovar:
       dbt test --vars '{negative_position_severity: error}'
-    Alternativa por limiares (só vale com severity error; com warn o dbt
-    nunca avalia error_if). Ex.: avisa até 10 e falha acima:
+    Com severidade error, negative_position_error_if define a partir de
+    quantas linhas o teste falha. Ex.: avisa até 10 e falha acima:
       dbt test --vars '{negative_position_severity: error, negative_position_error_if: ">10"}'
 
     Olha a posição líquida em quantidade (net_quantity), não em valor

@@ -1,4 +1,4 @@
-# D19: prova pública de que o projeto roda do zero, seguindo o README.
+# Roda os comandos do README num ambiente limpo, com DuckDB e com Postgres.
 name: dbt
 
 on:
@@ -23,7 +23,7 @@ jobs:
       - run: dbt docs generate
 
   postgres:
-    name: Postgres (alternativa D5)
+    name: Postgres
     runs-on: ubuntu-latest
     services:
       postgres:

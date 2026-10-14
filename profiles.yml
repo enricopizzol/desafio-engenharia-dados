@@ -3,13 +3,13 @@
 cdv_dbt_challenge:
   target: dev
   outputs:
-    # Padrão (D5): DuckDB em arquivo local, zero infraestrutura.
+    # DuckDB em arquivo local; o caminho pode ser trocado com DBT_DUCKDB_PATH.
     dev:
       type: duckdb
       path: "{{ env_var('DBT_DUCKDB_PATH', 'cdv.duckdb') }}"
       threads: 4
 
-    # Alternativa (D5): Postgres. Exige `pip install -r requirements-postgres.txt`
+    # Postgres: exige `pip install -r requirements-postgres.txt`
     # e um Postgres rodando (docker compose up -d). Uso: dbt build --target postgres
     postgres:
       type: postgres

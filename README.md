@@ -16,12 +16,11 @@ dbt run    →  Done. PASS=6  WARN=0 ERROR=0
 dbt test   →  Done. PASS=52 WARN=7 ERROR=0     (código de saída 0)
 ```
 
-**Os 7 WARN são os defeitos plantados nos dados, detectados pelos testes. Não são falhas do projeto.** Entre eles está o teste singular `assert_no_negative_position`, que encontra 6 clientes com posição negativa. A lista completa está em [O que esperar do `dbt test`](#dbt-test).
+**Os 7 WARN são os defeitos plantados nos dados, detectados pelos testes, e não falhas do projeto.** Lista completa em [O que esperar do `dbt test`](#dbt-test).
 
-- **Por que WARN e não ERROR no teste singular?** O enunciado pede que o `dbt test` passe e que o teste singular detecte o problema. A severidade `warn` faz as duas coisas: o teste conta e grava as linhas encontradas, e o comando termina sem erro. Os testes dos meus modelos (staging, intermediate e marts) são `error`, e todos passam.
-- **Quer ver o teste singular reprovar?** Rode `dbt test --vars '{negative_position_severity: error}'`. O comando termina com código 1.
-- **T035 e T036** (iguais em tudo menos o ID) são mantidas e marcadas com `is_possible_duplicate`, porque duas ordens iguais no mesmo dia são possíveis. Para deduplicá-las, rode `dbt run --full-refresh --vars '{dedup_transactions_by_content: true}'`. A fact cai de 98 para 97 linhas.
-- **Nenhum CSV foi editado.** Os registros inválidos são filtrados no staging via SQL e continuam sinalizados nos testes da fonte.
+- O teste singular `assert_no_negative_position` encontra 6 clientes com posição negativa. Ele usa severidade `warn` para detectar o problema sem fazer o `dbt test` falhar. Para ver o teste reprovar: `dbt test --vars '{negative_position_severity: error}'`.
+- T035 e T036 (iguais exceto no ID) ficam na base, marcadas com `is_possible_duplicate`. Para deduplicar: `dbt run --full-refresh --vars '{dedup_transactions_by_content: true}'`.
+- Nenhum CSV foi editado. Os registros inválidos são filtrados no staging.
 
 ---
 

@@ -4,7 +4,7 @@ Projeto dbt que transforma as transações e o cadastro de clientes de uma corre
 
 Os dados de entrada têm problemas de qualidade de propósito. Os CSVs estão em `seeds/` **exatamente como foram baixados**. Os testes do projeto sinalizam cada problema, e o staging filtra os registros inválidos via SQL.
 
-**Vídeo de apresentação:** _(link do vídeo)_
+**Vídeo de apresentação:** [assistir no Google Drive](https://drive.google.com/file/d/1wG6KXZAAUphUYkLvi9Ert0T8TFfiS2T7/view?usp=sharing)
 
 ---
 
@@ -216,7 +216,7 @@ dbt docs serve        # abre em http://localhost:8080
 
 ## Incremental (`fact_transactions`)
 
-A cada execução, a fact reprocessa as transações dos **últimos 3 dias** a partir da maior `transaction_date` já carregada (`>=`, não `>`). Assim, uma transação que chega atrasada com uma data já carregada não se perde. A `unique_key = transaction_id` impede duplicatas no reprocessamento.
+A cada execução, a fact reprocessa as transações dos **últimos 3 dias** a partir da maior `transaction_date` já carregada. A janela é o que pega uma transação que chega atrasada, com data igual ou anterior à última carregada; o `>=` inclui por inteiro o dia da borda. A `unique_key = transaction_id` com `delete+insert` impede duplicatas no reprocessamento.
 
 Para ver funcionando:
 
@@ -248,7 +248,7 @@ Cada decisão, com o motivo e as alternativas, está em **[decisoes.md](decisoes
 - **Teste singular com severidade `warn`**, configurável por variável, e as falhas gravadas no banco (`store_failures`). Assim ele detecta sem quebrar o pipeline, e vira bloqueante com um `--vars`.
 - **Testes da fonte em `warn`, testes dos modelos em `error`**: o aviso aponta o problema do dado recebido, e o erro protege o que o projeto entrega.
 - **Posições negativas não são filtradas** no mart: filtrá-las faria o teste singular passar escondendo o problema.
-- **Incremental com janela de 3 dias** (`>=`, não `>`) e `unique_key`, para não perder transações atrasadas nem duplicar ao reprocessar.
+- **Incremental com janela de 3 dias** e `unique_key`: a janela pega transações atrasadas, e a chave com `delete+insert` evita duplicar ao reprocessar.
 - **Contratos** nos marts: nomes e tipos das colunas são garantidos no build.
 - **Marts leem da fato (estilo Kimball):** o portfólio e as métricas de atividade da `dim_clients` agregam a `fact_transactions`, a fonte única das transações publicadas. Em troca, herdam qualquer desvio do incremental (D22).
 - **Clientes duplicados viram uma linha só** (o registro mais completo), o que equivale a um **SCD tipo 1**: a dimensão guarda só o estado atual. Em produção, se o histórico importasse (um cliente que muda de cidade), eu usaria **SCD tipo 2** com `dbt snapshot` (`valid_from`/`valid_to`) e uma **surrogate key** no lugar do `client_id` original. Não implementei porque o CSV é uma foto única, sem versões para guardar. O D10 mostra o cenário completo: o C6 em duas versões, o snapshot, a surrogate key por versão e o join da fato pela versão vigente.

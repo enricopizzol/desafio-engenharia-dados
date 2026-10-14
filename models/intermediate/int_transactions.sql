@@ -74,6 +74,6 @@ enriched as (
 
 select
     *,
-    -- fluxo financeiro com sinal: compra positiva, venda negativa
+    -- valor financeiro com sinal: compra positiva, venda negativa
     cast(sign(signed_quantity) * gross_amount as decimal(18,2)) as signed_amount
 from enriched

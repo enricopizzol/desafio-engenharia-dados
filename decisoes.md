@@ -240,9 +240,9 @@ O tamanho da janela também é variável: `fact_lookback_days` (padrão 3).
 Só lógica que realmente se repete:
 - `clean_string(col)`: `nullif(trim(col), '')`. Usada nos dois modelos de staging.
 - `deduplicate(relation, partition_by, order_by)`: `row_number()` e filtro. Usada nos dois modelos de staging.
-- `count_nulls(columns)`: soma de nulos numa lista de colunas, para escolher o registro mais completo.
+- `count_nulls(columns)`: soma de nulos numa lista de colunas, para escolher o registro mais completo. Usada só no `stg_clients`.
 - `duckdb__safe_cast`: override do `dbt.safe_cast` com `try_cast`, para um valor inválido virar nulo no DuckDB (D8).
-- Testes genéricos `positive_value` e `unique_combination`, usados em seeds, staging, intermediate e marts.
+- Testes genéricos `positive_value`, usado em seeds, staging, intermediate e marts, e `unique_combination`, usado nos seeds para sinalizar T035/T036.
 
 **Não virou macro:** `signed_quantity`. Seria usada num lugar só, e SQL direto é mais legível.
 

@@ -17,8 +17,8 @@ Cada decisão tem um código (D1, D2...) que aparece nos comentários do código
 | D9 | T035/T036 | manter as duas e marcar | deduplicar pelo conteúdo | `--vars '{dedup_transactions_by_content: true}'` |
 | D10 | Clientes duplicados | manter o registro mais completo (SCD tipo 1) | SCD tipo 2 com snapshot (documentado, não implementado) | |
 | D11 | Posições negativas no mart | não filtrar | filtrar (rejeitada, só demonstração) | `--vars '{portfolio_hide_negative_positions: true}'` |
-| D12 | Significado de `net_amount` | fluxo financeiro líquido | (nenhuma) | |
-| D13 | Incremental | `delete+insert` com janela de 3 dias | `merge`, `append`; tamanho da janela | `--vars '{fact_incremental_strategy: merge, fact_lookback_days: 7}'` |
+| D12 | Significado de `net_amount` | posição líquida em valor financeiro (BUY − SELL) | (nenhuma) | |
+| D13 | Incremental | `delete+insert` com janela de 3 dias | tamanho da janela | `--vars '{fact_lookback_days: 7}'` |
 | D14 | Macros | `clean_string`, `deduplicate`, `count_nulls` + 2 testes genéricos | (nenhuma) | |
 | D15 | Profile | `profiles.yml` na raiz | caminho do banco por env var | `DBT_DUCKDB_PATH=outro.duckdb` |
 | D16 | Contratos nos marts | aplicados | (nenhuma) | |
@@ -100,7 +100,7 @@ Um detalhe que o teste das alternativas revelou: **limiares só funcionam com se
 
 **Por quê DuckDB:** rodar a partir do README sem ajuda pesa mais que realismo.
 
-**Como a alternativa funciona:** o SQL usa as macros cross-database do dbt (`dbt.safe_cast`, `dbt.dateadd`, `dbt.type_float`), então o mesmo código roda nos dois bancos. `docker compose up -d`, `pip install -r requirements-postgres.txt` e `dbt build --target postgres`. Resultado esperado: `PASS=60 WARN=6 ERROR=0`, mesmas 98 transações e 6 posições negativas, incremental `delete+insert` e `merge` funcionando.
+**Como a alternativa funciona:** o SQL usa as macros cross-database do dbt (`dbt.safe_cast`, `dbt.dateadd`, `dbt.type_float`), então o mesmo código roda nos dois bancos. `docker compose up -d`, `pip install -r requirements-postgres.txt` e `dbt build --target postgres`. Resultado esperado: `PASS=60 WARN=6 ERROR=0`, mesmas 98 transações e 6 posições negativas, incremental `delete+insert` funcionando.
 
 Rodar no Postgres revelou um bug que o DuckDB escondia: o contrato declarava as colunas de texto como `varchar`, o Postgres criava a tabela com `character varying`, o SQL do modelo devolvia `text`, e a segunda execução incremental falhava por mudança de schema. A correção foi declarar `text` no contrato, que nos dois bancos é o tipo nativo de string.
 
@@ -209,9 +209,9 @@ No dbt, seriam três peças:
 
 ## D12. O que `net_amount` significa
 
-**Escolha:** `net_amount = total comprado em R$ - total vendido em R$`. É o **fluxo financeiro líquido**, não valor de mercado nem custo da posição. Está escrito assim na documentação da coluna.
+**Escolha:** `net_amount = total comprado em R$ - total vendido em R$`. É a **posição líquida em valor financeiro** (BUY − SELL), como o enunciado chama, e não volume financeiro, valor de mercado nem custo da posição. Está escrito assim na documentação da coluna.
 
-**Consequência:** o teste singular olha `net_quantity`, não `net_amount`. Valor líquido negativo com quantidade positiva é legítimo (as vendas já recuperaram mais do que as compras custaram; é fluxo de caixa, não lucro). Hoje isso não ocorre nos dados, mas é a regra correta.
+**Consequência:** o teste singular olha `net_quantity`, não `net_amount`. Valor negativo com quantidade positiva é legítimo (o cliente vendeu mais em reais do que comprou) e não indica lucro nem prejuízo. Hoje isso não ocorre nos dados, mas é a regra correta.
 
 ## D13. `fact_transactions` incremental (bônus 6)
 
@@ -224,18 +224,12 @@ where transaction_date >= max(transaction_date) - 3 dias
 com `unique_key = transaction_id`, estratégia `delete+insert` e `on_schema_change = fail`.
 
 **Por quê:**
-- **`>=` com janela, não `>`.** Com `>`, uma transação que chega atrasada com a mesma data do último lote se perde. Validado: uma linha nova (T999) com a data máxima já carregada entra na execução incremental.
+- **Janela de N dias.** Uma transação atrasada chega com data igual ou anterior à maior já carregada. Reprocessar os últimos N dias a pega, e é a janela que protege, não só o operador. O `>=` inclui por inteiro o dia da borda (maior data menos N). Validado: uma linha nova (T999) com a data máxima já carregada entra na execução incremental.
 - **`unique_key`** torna o reprocessamento da janela idempotente. Validado: a segunda execução mantém 98 linhas.
 - **`delete+insert`** é estável no DuckDB e fácil de explicar.
 - **`on_schema_change = fail`:** mudança de schema tem que ser decisão consciente (`--full-refresh`).
 
-**Alternativas implementadas (`fact_incremental_strategy`):**
-
-| Estratégia | Resultado validado | Quando usar |
-|---|---|---|
-| `delete+insert` (padrão) | 98 linhas após reprocessar | DuckDB, Postgres |
-| `merge` | 98 linhas após reprocessar | Snowflake, BigQuery, Postgres 15+ |
-| `append` | 100 linhas: duplica a janela e o teste `unique` falha | Só para comparação: mostra por que precisa de `unique_key` |
+**Estratégia fixa:** `delete+insert`, sem alternativa por variável. `merge` e `append` foram avaliadas e removidas para simplificar o modelo.
 
 O tamanho da janela também é variável: `fact_lookback_days` (padrão 3).
 
@@ -294,7 +288,7 @@ Dois jobs num runner limpo:
 
 **Por quê:** é o desenho dimensional clássico: a fato é a fonte única das transações publicadas, e tudo que agrega transações parte dela. O portfólio fica sempre consistente com a fato que o consumidor também consulta, e a linhagem fica mais simples de explicar. Nenhuma métrica foi perdida, porque a fato já tem todas as colunas de que os dois modelos precisam. Um `ref()` a um modelo incremental lê a tabela inteira (as 98 linhas), não só a janela de reprocessamento, então os números não mudaram: portfólio com 55 linhas, `dim_clients` com 25 e `dbt test` com `PASS=52 WARN=7`.
 
-**Custo:** o portfólio herda qualquer desvio do incremental. Validado: com a estratégia `append` (D13), a fato fica com 100 linhas e o portfólio, relido dela, também passa a contar 100 transações. Uma correção retroativa fora da janela (limitação do D13) também não chegaria ao portfólio até um `--full-refresh`.
+**Custo:** o portfólio herda qualquer desvio do incremental. Uma correção retroativa fora da janela (limitação do D13) também não chegaria ao portfólio até um `--full-refresh`.
 
 **Alternativa não implementada:** os marts lerem direto do `int_transactions`, como irmãos da fato. O portfólio seria sempre recalculado da fonte completa e não herdaria limitações do incremental, ao custo de duas linhas de cálculo paralelas que podem divergir.
 

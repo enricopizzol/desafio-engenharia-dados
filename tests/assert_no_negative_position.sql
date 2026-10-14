@@ -8,8 +8,9 @@
     nunca avalia error_if). Ex.: avisa até 10 e falha acima:
       dbt test --vars '{negative_position_severity: error, negative_position_error_if: ">10"}'
 
-    Olha net_quantity, não net_amount: valor líquido negativo com quantidade
-    positiva é legítimo: é fluxo de caixa, não lucro nem prejuízo. -#}
+    Olha a posição líquida em quantidade (net_quantity), não em valor
+    financeiro (net_amount): valor negativo com quantidade positiva é
+    legítimo e não indica lucro nem prejuízo. -#}
 {{ config(
     severity = var('negative_position_severity'),
     warn_if = var('negative_position_warn_if'),

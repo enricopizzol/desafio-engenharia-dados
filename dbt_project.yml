@@ -29,7 +29,6 @@ vars:
   # D11 (rejeitada, só para demonstração): esconder posições negativas no mart
   portfolio_hide_negative_positions: false
   # D13: incremental da fact
-  fact_incremental_strategy: delete+insert   # delete+insert | merge | append
   fact_lookback_days: 3
 
 seeds:

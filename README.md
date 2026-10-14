@@ -201,8 +201,8 @@ clients ───────────► stg_clients ───────�
 | `mart_client_portfolio` | table | cliente + ativo | 55 | Posição líquida por cliente e ativo, agregada da fato |
 
 No `mart_client_portfolio`:
-- `net_quantity` = quantidade comprada − quantidade vendida.
-- `net_amount` = valor comprado (R$) − valor vendido (R$). É o **fluxo financeiro líquido**, não o valor de mercado da posição.
+- `net_quantity` = posição líquida em quantidade: BUY − SELL.
+- `net_amount` = posição líquida em valor financeiro: BUY − SELL, em R$. Não é volume financeiro nem valor de mercado da posição.
 - `position_status` = `open`, `closed` ou `negative`. As posições negativas **não são filtradas**, para que o teste singular as veja.
 
 Para navegar pela documentação e pelo grafo de dependências:
@@ -262,7 +262,7 @@ As alternativas descritas em `decisoes.md` estão implementadas e são ligadas p
 | Teste singular bloqueante | `dbt test --vars '{negative_position_severity: error}'` |
 | Bloqueia só acima de um limite | `dbt test --vars '{negative_position_severity: error, negative_position_error_if: ">10"}'` |
 | Deduplicar T035/T036 pelo conteúdo | `dbt run --full-refresh --vars '{dedup_transactions_by_content: true}'` |
-| Incremental com `merge` e janela de 7 dias | `dbt run --vars '{fact_incremental_strategy: merge, fact_lookback_days: 7}'` |
+| Incremental com janela de reprocessamento de 7 dias | `dbt run --vars '{fact_lookback_days: 7}'` |
 
 ### Rodando em Postgres (opcional)
 

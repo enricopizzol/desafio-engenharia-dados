@@ -125,7 +125,7 @@ models:
         description: "{{ doc('asset_ticker') }}"
         data_type: text
       - name: net_quantity
-        description: Posição líquida em quantidade, comprado menos vendido.
+        description: Posição líquida em quantidade, BUY − SELL.
         data_type: bigint
         data_tests: [not_null]
       - name: net_amount

@@ -44,6 +44,6 @@ Verdadeiro quando existe outra transação com o mesmo cliente, ativo, operaçã
 {% enddocs %}
 
 {% docs net_amount %}
-Fluxo financeiro líquido: total comprado em reais menos total vendido em reais.
-**Não** é valor de mercado nem custo da posição; pode ser negativo com quantidade positiva quando as vendas já recuperaram mais do que as compras custaram. É fluxo de caixa, não lucro: o resultado depende do custo médio e do preço de mercado.
+Posição líquida em valor financeiro: BUY − SELL, em reais (total comprado menos total vendido).
+**Não** é volume financeiro, valor de mercado nem custo da posição. Pode ser negativa com quantidade positiva quando o cliente vendeu mais em reais do que comprou. Não é lucro: o resultado depende do custo médio e do preço de mercado.
 {% enddocs %}

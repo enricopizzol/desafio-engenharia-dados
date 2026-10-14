@@ -114,6 +114,8 @@ flowchart LR
 
 **Legenda:** staging e intermediate são `view`; `dim_clients` e `mart_client_portfolio` são `table`; `fact_transactions` é `incremental`. Os marts seguem o estilo Kimball: o portfólio e as métricas de atividade da `dim_clients` leem da fato (D22). A `dim_clients` lê de duas fontes: `stg_clients` para o cadastro e `fact_transactions` para as métricas de atividade. É isso que mantém na dimensão os 15 clientes que nunca operaram.
 
+Versões ilustradas deste e de outros fluxos (camadas, severidade dos testes, posição acumulada, SCD do C6, marts) estão em [`diagramas/`](diagramas/), em PNG e no formato editável do Excalidraw.
+
 ---
 
 ## O que esperar de cada comando
@@ -333,6 +335,7 @@ dbt build --target postgres
 ├── scripts/
 │   ├── rodar.sh                 atalho: instala e roda seed, run e test
 │   └── validar_alternativas.sh  confere cada alternativa do decisoes.md
+├── diagramas/                   9 diagramas do projeto (PNG + .excalidraw)
 ├── docker-compose.yml           só para a alternativa Postgres
 └── .github/workflows/dbt.yml    CI: roda os três comandos num ambiente limpo
 ```

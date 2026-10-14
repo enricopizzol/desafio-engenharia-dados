@@ -1,13 +1,13 @@
 version: 2
 
-# Marts com contrato aplicado (D16): nomes e tipos das colunas são garantidos
+# Marts com contrato aplicado: nomes e tipos das colunas são garantidos
 # no build; uma mudança de tipo quebra o `dbt run` em vez de chegar ao consumidor.
 
 models:
   - name: fact_transactions
     description: >
       Fato de transações. Grão: uma linha por transação válida (98 hoje).
-      Incremental com janela de reprocessamento (D13).
+      Incremental com janela de reprocessamento.
     config:
       contract: {enforced: true}
     columns:
@@ -104,7 +104,7 @@ models:
     description: >
       Portfólio consolidado. Grão: cliente + ativo. Inclui posições zeradas e
       negativas, identificadas por position_status; o teste singular
-      assert_no_negative_position aponta as negativas (D3, D11).
+      assert_no_negative_position aponta as negativas.
     config:
       contract: {enforced: true}
     columns:

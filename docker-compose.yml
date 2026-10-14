@@ -1,4 +1,4 @@
-# Só para a alternativa Postgres (D5). O caminho padrão (DuckDB) não precisa disto.
+# Postgres local para rodar o projeto com --target postgres. O padrão (DuckDB) não precisa disto.
 services:
   postgres:
     image: postgres:16

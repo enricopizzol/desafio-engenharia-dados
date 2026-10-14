@@ -1,6 +1,6 @@
 {#- Junta transações e clientes e aplica as regras de negócio.
 
-    D9: T035/T036 são idênticas exceto pelo ID. Por padrão as duas ficam e
+    T035/T036 são idênticas exceto pelo ID. Por padrão as duas ficam e
     recebem is_possible_duplicate = true. Com
     --vars '{dedup_transactions_by_content: true}' só a de menor ID fica. -#}
 with transactions as (
@@ -74,6 +74,6 @@ enriched as (
 
 select
     *,
-    -- fluxo financeiro com sinal: compra positiva, venda negativa (D12)
+    -- fluxo financeiro com sinal: compra positiva, venda negativa
     cast(sign(signed_quantity) * gross_amount as decimal(18,2)) as signed_amount
 from enriched

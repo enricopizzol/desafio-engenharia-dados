@@ -1,4 +1,4 @@
-{#- Tipagem, padronização e filtro de registros inválidos (D8).
+{#- Tipagem, padronização e filtro de registros inválidos.
     Registros removidos aqui continuam sinalizados pelos testes do seed. -#}
 with source as (
 

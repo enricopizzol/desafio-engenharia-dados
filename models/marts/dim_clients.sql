@@ -1,5 +1,5 @@
 {#- Uma linha por cliente, incluindo quem nunca operou (C11 a C25).
-    Cadastro vem do staging; métricas de atividade vêm da fato (D22). -#}
+    Cadastro vem do staging; métricas de atividade vêm da fato. -#}
 with clients as (
 
     select * from {{ ref('stg_clients') }}

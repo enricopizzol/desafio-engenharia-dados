@@ -1,13 +1,13 @@
 version: 2
 
-# Testes de qualidade da FONTE (D4). Eles descrevem os defeitos plantados nos
+# Testes de qualidade da FONTE. Eles descrevem os defeitos plantados nos
 # CSVs e devem disparar como WARN: sinalizar, não limpar. Para torná-los
 # bloqueantes: --vars '{source_quality_severity: error}'.
 # A chave transaction_id é contrato e fica como error.
 
 seeds:
   - name: transactions
-    description: Transações de compra e venda de ações, exatamente como recebidas. Todas as colunas são texto (D7).
+    description: Transações de compra e venda de ações, exatamente como recebidas. Todas as colunas são texto.
     columns:
       - name: transaction_id
         description: "{{ doc('transaction_id') }}"
@@ -69,7 +69,7 @@ seeds:
             severity: "{{ var('source_quality_severity') }}"
 
   - name: clients
-    description: Cadastro de clientes, exatamente como recebido. Todas as colunas são texto (D7).
+    description: Cadastro de clientes, exatamente como recebido. Todas as colunas são texto.
     columns:
       - name: client_id
         description: "{{ doc('client_id') }} Repetido para C1 e C6."

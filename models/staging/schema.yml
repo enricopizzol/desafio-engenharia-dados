@@ -1,7 +1,7 @@
 version: 2
 
 # Contrato da camada de staging: severidade error. Estes testes têm que passar,
-# e passam porque o staging filtra e deduplica via SQL (D4, D8, D10).
+# e passam porque o staging filtra e deduplica via SQL.
 
 models:
   - name: stg_transactions

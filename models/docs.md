@@ -40,7 +40,7 @@ Valor com sinal: positivo em compras (dinheiro investido), negativo em vendas (d
 
 {% docs is_possible_duplicate %}
 Verdadeiro quando existe outra transação com o mesmo cliente, ativo, operação, quantidade, preço e data
-(caso T035/T036). Por padrão as duas são mantidas; ver decisão D9 em `decisoes.md`.
+(caso T035/T036). Por padrão as duas são mantidas.
 {% enddocs %}
 
 {% docs net_amount %}

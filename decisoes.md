@@ -1,6 +1,6 @@
 # Decisões do projeto
 
-Cada decisão tem um código (D1, D2...) que aparece nos comentários do código. Para cada uma: o que foi escolhido, por quê, quais as alternativas e como ativá-las. Sempre que foi possível, a alternativa foi **implementada** atrás de uma variável do dbt (`--vars`) ou de um target, e **validada** com dbt-core 1.12.5 e dbt-duckdb 1.11.0 (Postgres com dbt-postgres 1.11.0 e Postgres 16).
+Cada decisão tem um código (D1, D2...), usado como referência no README. Para cada uma: o que foi escolhido, por quê, quais as alternativas e como ativá-las. Sempre que foi possível, a alternativa foi **implementada** atrás de uma variável do dbt (`--vars`) ou de um target, e **validada** com dbt-core 1.12.5 e dbt-duckdb 1.11.0 (Postgres com dbt-postgres 1.11.0 e Postgres 16).
 
 ## Resumo
 

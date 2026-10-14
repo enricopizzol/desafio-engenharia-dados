@@ -1,4 +1,4 @@
-{#- Uma linha por cliente, mantendo o registro mais completo (D10). -#}
+{#- Uma linha por cliente, mantendo o registro mais completo. -#}
 with source as (
 
     select * from {{ ref('clients') }}

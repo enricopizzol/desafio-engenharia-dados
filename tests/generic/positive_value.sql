@@ -1,5 +1,5 @@
 {#- Falha para cada linha cujo valor não é estritamente positivo.
-    Faz cast para double porque os seeds são carregados como texto (D7);
+    Faz cast para double porque os seeds são carregados como texto;
     valores não numéricos também falham. -#}
 {% test positive_value(model, column_name) %}
 select *

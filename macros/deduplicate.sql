@@ -1,6 +1,6 @@
 {#- Mantém uma linha por partição, a primeira segundo `order_by`.
     `order_by` deve ser determinístico (incluir um desempate) para que o
-    resultado não mude entre execuções. Usada nos dois modelos de staging (D14). -#}
+    resultado não mude entre execuções. Usada nos dois modelos de staging. -#}
 {% macro deduplicate(relation, partition_by, order_by) -%}
     select *
     from (

@@ -6,3 +6,4 @@ dbt_packages/
 .venv/
 venv/
 .user.yml
+.idea/

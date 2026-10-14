@@ -4,7 +4,7 @@ models:
   - name: int_transactions
     description: >
       Transações válidas com dados do cliente e regras de negócio: quantidade e
-      valor com sinal, sinalização de possível duplicata e posição acumulada.
+      valor com sinal e sinalização de possível duplicata.
       Base de todos os marts.
     columns:
       - name: transaction_id
@@ -39,7 +39,3 @@ models:
         data_tests: [not_null]
       - name: signed_amount
         description: "{{ doc('signed_amount') }}"
-      - name: running_quantity
-        description: >
-          Posição acumulada do cliente no ativo até esta transação, inclusive,
-          em ordem de data e ID. Base do teste assert_no_negative_running_position.

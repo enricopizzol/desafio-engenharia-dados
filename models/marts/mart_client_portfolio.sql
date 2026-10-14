@@ -16,7 +16,7 @@ aggregated as (
         asset_ticker,
         -- posição: compras menos vendas (o teste singular olha esta coluna)
         cast(sum(signed_quantity) as bigint)                                as net_quantity,
-        -- fluxo financeiro líquido; negativo com posição positiva = lucro realizado
+        -- fluxo financeiro líquido (caixa), não lucro; negativo = as vendas já recuperaram mais do que as compras custaram
         cast(sum(signed_amount) as decimal(18,2))                           as net_amount,
         cast(sum(case when operation_type = 'BUY'  then quantity else 0 end) as bigint) as total_bought_quantity,
         cast(sum(case when operation_type = 'SELL' then quantity else 0 end) as bigint) as total_sold_quantity,

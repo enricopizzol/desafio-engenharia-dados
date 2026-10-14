@@ -13,10 +13,10 @@ Os dados de entrada têm problemas de qualidade de propósito. Os CSVs estão em
 ```
 dbt seed   →  Done. PASS=2  WARN=0 ERROR=0
 dbt run    →  Done. PASS=6  WARN=0 ERROR=0
-dbt test   →  Done. PASS=52 WARN=7 ERROR=0     (código de saída 0)
+dbt test   →  Done. PASS=52 WARN=6 ERROR=0     (código de saída 0)
 ```
 
-**Os 7 WARN são os defeitos plantados nos dados, detectados pelos testes, e não falhas do projeto.** Lista completa em [O que esperar do `dbt test`](#dbt-test).
+**Os 6 WARN são os defeitos plantados nos dados, detectados pelos testes, e não falhas do projeto.** Lista completa em [O que esperar do `dbt test`](#dbt-test).
 
 - O teste singular `assert_no_negative_position` encontra 6 clientes com posição negativa. Ele usa severidade `warn` para detectar o problema sem fazer o `dbt test` falhar. Para ver o teste reprovar: `dbt test --vars '{negative_position_severity: error}'`.
 - T035 e T036 (iguais exceto no ID) ficam na base, marcadas com `is_possible_duplicate`. Para deduplicar: `dbt run --full-refresh --vars '{dedup_transactions_by_content: true}'`.
@@ -31,18 +31,6 @@ dbt test   →  Done. PASS=52 WARN=7 ERROR=0     (código de saída 0)
 - **Python 3.10 a 3.13** (testado com 3.12 e 3.13). Confira com `python --version` ou `python3 --version`.
 - **git**.
 - Nada mais. O banco é **DuckDB**: um arquivo local (`cdv.duckdb`) criado na primeira execução. Não precisa de Docker, servidor nem credenciais.
-
-### Atalho (Linux e macOS)
-
-Um comando só cria o ambiente virtual, instala as dependências e roda `dbt seed`, `dbt run` e `dbt test`, sem precisar ativar nada:
-
-```bash
-git clone <url-deste-repositorio>
-cd <pasta-do-repositorio>
-bash scripts/rodar.sh
-```
-
-Os passos abaixo fazem o mesmo, manualmente.
 
 ### 2. Instalação
 
@@ -92,7 +80,7 @@ flowchart LR
     end
 
     subgraph INTERMEDIATE["⚙ Intermediate (view)"]
-        INT[int_transactions<br/>98 · sinais + running_quantity]
+        INT[int_transactions<br/>98 · sinais e valores]
     end
 
     subgraph MARTS["📊 Marts"]
@@ -112,8 +100,6 @@ flowchart LR
 ```
 
 **Legenda:** staging e intermediate são `view`; `dim_clients` e `mart_client_portfolio` são `table`; `fact_transactions` é `incremental`. Os marts seguem o estilo Kimball: o portfólio e as métricas de atividade da `dim_clients` leem da fato (D22). A `dim_clients` lê de duas fontes: `stg_clients` para o cadastro e `fact_transactions` para as métricas de atividade. É isso que mantém na dimensão os 15 clientes que nunca operaram.
-
-Versões ilustradas deste e de outros fluxos (camadas, severidade dos testes, posição acumulada, SCD do C6, marts) estão em [`diagramas/`](diagramas/), em PNG e no formato editável do Excalidraw.
 
 ---
 
@@ -138,15 +124,14 @@ Done. PASS=6 WARN=0 ERROR=0
 ### `dbt test`
 
 ```
-Done. PASS=52 WARN=7 ERROR=0
+Done. PASS=52 WARN=6 ERROR=0
 ```
 
-**Os 7 avisos (WARN, em amarelo) são esperados: são os testes encontrando os problemas plantados nos dados.** Nenhum teste dá erro.
+**Os 6 avisos (WARN, em amarelo) são esperados: são os testes encontrando os problemas plantados nos dados.** Nenhum teste dá erro.
 
 | Teste | Achados | O que encontrou |
 |---|---|---|
 | `assert_no_negative_position` (teste singular obrigatório) | 6 | Clientes que terminam vendidos em um ativo: C1 BBDC4 (-50), C3 WEGE3 (-30), C5 BBDC4 (-400), C6 ITUB4 (-50), C7 WEGE3 (-60), C8 VALE3 (-30) |
-| `assert_no_negative_running_position` (extra) | 11 | Transações em que a posição ficou negativa em algum momento, mesmo que depois tenha se recomposto |
 | `not_null_transactions_client_id` | 1 | T021 sem cliente |
 | `positive_value_transactions_quantity` | 1 | T037: compra com quantidade -50 |
 | `transactions_unique_content_except_id` | 1 | T035 e T036 iguais em tudo menos o ID |
@@ -210,7 +195,7 @@ clients ───────────► stg_clients ───────�
 |---|---|---|---|---|
 | `stg_transactions` | view | transação | 98 | Tipa, padroniza e remove inválidos (saem T021 e T037) |
 | `stg_clients` | view | cliente | 25 | Tipa, padroniza e deduplica, mantendo o registro mais completo (C6 fica com a cidade) |
-| `int_transactions` | view | transação | 98 | Junta com clientes; calcula quantidade e valor com sinal, posição acumulada e marca possíveis duplicatas |
+| `int_transactions` | view | transação | 98 | Junta com clientes; calcula quantidade e valor com sinal e marca possíveis duplicatas |
 | `fact_transactions` | incremental | transação | 98 | Fato de transações |
 | `dim_clients` | table | cliente | 25 | Dimensão, inclusive os 15 clientes sem transação; atividade calculada da fato |
 | `mart_client_portfolio` | table | cliente + ativo | 55 | Posição líquida por cliente e ativo, agregada da fato |
@@ -279,12 +264,6 @@ As alternativas descritas em `decisoes.md` estão implementadas e são ligadas p
 | Deduplicar T035/T036 pelo conteúdo | `dbt run --full-refresh --vars '{dedup_transactions_by_content: true}'` |
 | Incremental com `merge` e janela de 7 dias | `dbt run --vars '{fact_incremental_strategy: merge, fact_lookback_days: 7}'` |
 
-O script abaixo roda todas as alternativas e confere os resultados (usa um banco separado, sem mexer no `cdv.duckdb`):
-
-```bash
-bash scripts/validar_alternativas.sh
-```
-
 ### Rodando em Postgres (opcional)
 
 ```bash
@@ -329,12 +308,7 @@ dbt build --target postgres
 ├── macros/                      clean_string, deduplicate, count_nulls, safe_cast
 ├── tests/
 │   ├── assert_no_negative_position.sql
-│   ├── assert_no_negative_running_position.sql
 │   └── generic/                 positive_value, unique_combination
-├── scripts/
-│   ├── rodar.sh                 atalho: instala e roda seed, run e test
-│   └── validar_alternativas.sh  confere cada alternativa do decisoes.md
-├── diagramas/                   9 diagramas do projeto (PNG + .excalidraw)
 ├── docker-compose.yml           só para a alternativa Postgres
 └── .github/workflows/dbt.yml    CI: roda os três comandos num ambiente limpo
 ```

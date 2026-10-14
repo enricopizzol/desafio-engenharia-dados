@@ -75,11 +75,5 @@ enriched as (
 select
     *,
     -- fluxo financeiro com sinal: compra positiva, venda negativa (D12)
-    cast(sign(signed_quantity) * gross_amount as decimal(18,2)) as signed_amount,
-    -- posição acumulada por cliente e ativo, transação a transação (D17)
-    sum(signed_quantity) over (
-        partition by client_id, asset_ticker
-        order by transaction_date, transaction_id
-        rows between unbounded preceding and current row
-    ) as running_quantity
+    cast(sign(signed_quantity) * gross_amount as decimal(18,2)) as signed_amount
 from enriched

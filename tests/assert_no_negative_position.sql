@@ -9,7 +9,7 @@
       dbt test --vars '{negative_position_severity: error, negative_position_error_if: ">10"}'
 
     Olha net_quantity, não net_amount: valor líquido negativo com quantidade
-    positiva é legítimo (lucro realizado). -#}
+    positiva é legítimo: é fluxo de caixa, não lucro nem prejuízo. -#}
 {{ config(
     severity = var('negative_position_severity'),
     warn_if = var('negative_position_warn_if'),

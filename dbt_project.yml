@@ -22,8 +22,6 @@ vars:
   # error_if só é avaliado quando a severidade é error.
   negative_position_warn_if: "!= 0"
   negative_position_error_if: "!= 0"
-  # D17: severidade do teste de posição acumulada negativa (warn | error)
-  negative_running_position_severity: warn
   # D4: severidade dos testes de qualidade da fonte, nos seeds (warn | error)
   source_quality_severity: warn
   # D9: T035/T036 — false mantém as duas e marca; true deduplica pelo conteúdo

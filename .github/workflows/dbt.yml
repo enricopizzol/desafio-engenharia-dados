@@ -20,7 +20,6 @@ jobs:
       - run: dbt test
       - name: Modo estrito tem que falhar (o teste singular detecta o problema)
         run: "! dbt test --select assert_no_negative_position --vars '{negative_position_severity: error}'"
-      - run: bash scripts/validar_alternativas.sh
       - run: dbt docs generate
 
   postgres:

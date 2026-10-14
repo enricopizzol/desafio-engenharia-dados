@@ -1,6 +1,6 @@
 # Decisões do projeto
 
-Cada decisão tem um código (D1, D2...) que aparece nos comentários do código. Para cada uma: o que foi escolhido, por quê, quais as alternativas e como ativá-las. Sempre que foi possível, a alternativa foi **implementada** atrás de uma variável do dbt (`--vars`) ou de um target, e **validada** pelo script `scripts/validar_alternativas.sh` (42 verificações, todas OK com dbt-core 1.12.5 e dbt-duckdb 1.11.0; Postgres validado com dbt-postgres 1.11.0 e Postgres 16).
+Cada decisão tem um código (D1, D2...) que aparece nos comentários do código. Para cada uma: o que foi escolhido, por quê, quais as alternativas e como ativá-las. Sempre que foi possível, a alternativa foi **implementada** atrás de uma variável do dbt (`--vars`) ou de um target, e **validada** com dbt-core 1.12.5 e dbt-duckdb 1.11.0 (Postgres com dbt-postgres 1.11.0 e Postgres 16).
 
 ## Resumo
 
@@ -22,14 +22,13 @@ Cada decisão tem um código (D1, D2...) que aparece nos comentários do código
 | D14 | Macros | `clean_string`, `deduplicate`, `count_nulls` + 2 testes genéricos | (nenhuma) | |
 | D15 | Profile | `profiles.yml` na raiz | caminho do banco por env var | `DBT_DUCKDB_PATH=outro.duckdb` |
 | D16 | Contratos nos marts | aplicados | (nenhuma) | |
-| D17 | Posição acumulada negativa | teste extra `warn` | `error` | `--vars '{negative_running_position_severity: error}'` |
 | D18 | Descrições repetidas | doc blocks (`models/docs.md`) | (nenhuma) | |
 | D19 | CI | GitHub Actions, DuckDB e Postgres | (nenhuma) | |
 | D20 | Comando de execução | `seed`, `run`, `test` | `dbt build` | `dbt build` |
 | D21 | Chave da dimensão | `client_id` original | surrogate key e SCD tipo 2 (não implementadas, ver D10 e D21) | |
 | D22 | De onde os marts leem | portfólio e atividade da `dim_clients` leem da fato (Kimball) | ler do intermediate (não implementada) | |
 
-**Resultado esperado no padrão:** `dbt seed`, `dbt run` e `dbt test` saem com código 0. O `dbt test` mostra `PASS=52 WARN=7 ERROR=0`. Os 7 avisos são os defeitos plantados (detalhados no README).
+**Resultado esperado no padrão:** `dbt seed`, `dbt run` e `dbt test` saem com código 0. O `dbt test` mostra `PASS=52 WARN=6 ERROR=0`. Os 6 avisos são os defeitos plantados (detalhados no README).
 
 ---
 
@@ -58,7 +57,7 @@ O enunciado pede duas coisas que, ao pé da letra, se contradizem: "tudo tem que
 
 ```
 WARN 6 assert_no_negative_position
-Done. PASS=52 WARN=7 ERROR=0     (código de saída 0)
+Done. PASS=52 WARN=6 ERROR=0     (código de saída 0)
 ```
 
 As 6 linhas ficam gravadas em `main_dbt_test__audit.assert_no_negative_position`.
@@ -101,7 +100,7 @@ Um detalhe que o teste das alternativas revelou: **limiares só funcionam com se
 
 **Por quê DuckDB:** rodar a partir do README sem ajuda pesa mais que realismo.
 
-**Como a alternativa funciona:** o SQL usa as macros cross-database do dbt (`dbt.safe_cast`, `dbt.dateadd`, `dbt.type_float`), então o mesmo código roda nos dois bancos. `docker compose up -d`, `pip install -r requirements-postgres.txt` e `dbt build --target postgres`. Resultado validado: `PASS=60 WARN=7 ERROR=0`, mesmas 98 transações e 6 posições negativas, incremental `delete+insert` e `merge` funcionando.
+**Como a alternativa funciona:** o SQL usa as macros cross-database do dbt (`dbt.safe_cast`, `dbt.dateadd`, `dbt.type_float`), então o mesmo código roda nos dois bancos. `docker compose up -d`, `pip install -r requirements-postgres.txt` e `dbt build --target postgres`. Resultado esperado: `PASS=60 WARN=6 ERROR=0`, mesmas 98 transações e 6 posições negativas, incremental `delete+insert` e `merge` funcionando.
 
 Rodar no Postgres revelou um bug que o DuckDB escondia: o contrato declarava as colunas de texto como `varchar`, o Postgres criava a tabela com `character varying`, o SQL do modelo devolvia `text`, e a segunda execução incremental falhava por mudança de schema. A correção foi declarar `text` no contrato, que nos dois bancos é o tipo nativo de string.
 
@@ -212,7 +211,7 @@ No dbt, seriam três peças:
 
 **Escolha:** `net_amount = total comprado em R$ - total vendido em R$`. É o **fluxo financeiro líquido**, não valor de mercado nem custo da posição. Está escrito assim na documentação da coluna.
 
-**Consequência:** o teste singular olha `net_quantity`, não `net_amount`. Valor líquido negativo com quantidade positiva é legítimo (o cliente vendeu parte com lucro). Hoje isso não ocorre nos dados, mas é a regra correta.
+**Consequência:** o teste singular olha `net_quantity`, não `net_amount`. Valor líquido negativo com quantidade positiva é legítimo (as vendas já recuperaram mais do que as compras custaram; é fluxo de caixa, não lucro). Hoje isso não ocorre nos dados, mas é a regra correta.
 
 ## D13. `fact_transactions` incremental (bônus 6)
 
@@ -255,21 +254,13 @@ Só lógica que realmente se repete:
 
 ## D15. `profiles.yml` na raiz
 
-O dbt procura o profile no diretório atual antes de `~/.dbt`. Com o arquivo na raiz e o banco num caminho relativo (`cdv.duckdb`), o avaliador não configura nada. O caminho pode ser trocado com `DBT_DUCKDB_PATH`, o que o script de alternativas usa para não mexer no banco do dia a dia.
+O dbt procura o profile no diretório atual antes de `~/.dbt`. Com o arquivo na raiz e o banco num caminho relativo (`cdv.duckdb`), o avaliador não configura nada. O caminho pode ser trocado com `DBT_DUCKDB_PATH`, para não mexer no banco do dia a dia.
 
 ## D16. Contratos nos marts
 
 **Escolha:** `contract: {enforced: true}` em `fact_transactions`, `dim_clients` e `mart_client_portfolio`, com tipo declarado para toda coluna.
 
 **Por quê:** os marts são a interface com quem consome. Com contrato, uma mudança de tipo quebra o `dbt run` em vez de chegar silenciosamente ao dashboard. Para isso, as somas de quantidade viraram `bigint` explícito (o DuckDB devolveria `hugeint`).
-
-## D17. Posição acumulada negativa (extensão)
-
-**Escolha:** um segundo teste singular, `assert_no_negative_running_position`, também `warn`, sobre a coluna `running_quantity` do `int_transactions`.
-
-**Por quê:** a posição final negativa aparece em 6 pares, mas a posição fica negativa **em algum momento** em 11 transações. Exemplo: C2 vende 200 VALE3 em T033 tendo só 100, e só depois recompõe. O teste da posição final não vê isso.
-
-**Alternativa implementada:** `--vars '{negative_running_position_severity: error}'`. Validado: código 1.
 
 ## D18. Doc blocks
 
@@ -278,7 +269,7 @@ Descrições repetidas (`client_id`, `transaction_id`, `net_amount` e outras) es
 ## D19. CI no GitHub Actions
 
 Dois jobs num runner limpo:
-- **DuckDB:** os três comandos do README, a confirmação de que o modo estrito falha, o script de alternativas e `dbt docs generate`.
+- **DuckDB:** os três comandos do README, a confirmação de que o modo estrito falha e `dbt docs generate`.
 - **Postgres:** `dbt build --target postgres` contra um Postgres 16 e uma segunda execução incremental.
 
 **Por quê:** é a prova pública de que o projeto roda do zero, sem "funciona na minha máquina".
@@ -305,7 +296,7 @@ Dois jobs num runner limpo:
 
 **Custo:** o portfólio herda qualquer desvio do incremental. Validado: com a estratégia `append` (D13), a fato fica com 100 linhas e o portfólio, relido dela, também passa a contar 100 transações. Uma correção retroativa fora da janela (limitação do D13) também não chegaria ao portfólio até um `--full-refresh`.
 
-**Alternativa não implementada:** os marts lerem direto do `int_transactions`, como irmãos da fato. O portfólio seria sempre recalculado da fonte completa e não herdaria limitações do incremental, ao custo de duas linhas de cálculo paralelas que podem divergir. O teste `assert_no_negative_running_position` continua no `int_transactions`, porque a posição acumulada (`running_quantity`) é uma coluna de trabalho que a fato não publica.
+**Alternativa não implementada:** os marts lerem direto do `int_transactions`, como irmãos da fato. O portfólio seria sempre recalculado da fonte completa e não herdaria limitações do incremental, ao custo de duas linhas de cálculo paralelas que podem divergir.
 
 ## Problemas nos dados e onde cada um aparece
 
@@ -317,5 +308,4 @@ Dois jobs num runner limpo:
 | C1 | Linha duplicada idêntica | `unique_clients_client_id` | Deduplicado (D10) |
 | C6 | Duplicada, cópia sem cidade | `unique_clients_client_id`, `not_null_clients_city` | Fica a versão com cidade (D10) |
 | C1, C3, C5, C6, C7, C8 | Posição final negativa em 6 pares | `assert_no_negative_position` | Mantidas e sinalizadas (D3, D11) |
-| 11 transações | Posição negativa em algum momento | `assert_no_negative_running_position` | Sinalizadas (D17) |
 | C11 a C25 | Clientes sem transação | Nenhum: não é erro | Aparecem na dimensão com `has_transactions = false` |

@@ -99,7 +99,7 @@ flowchart LR
     FACT --> PORT
 ```
 
-**Legenda:** staging e intermediate são `view`; `dim_clients` e `mart_client_portfolio` são `table`; `fact_transactions` é `incremental`. Os marts seguem o estilo Kimball: o portfólio e as métricas de atividade da `dim_clients` leem da fato (D22). A `dim_clients` lê de duas fontes: `stg_clients` para o cadastro e `fact_transactions` para as métricas de atividade. É isso que mantém na dimensão os 15 clientes que nunca operaram.
+**Legenda:** staging e intermediate são `view`; `dim_clients` e `mart_client_portfolio` são `table`; `fact_transactions` é `incremental`. Os marts seguem o estilo Kimball: o portfólio e as métricas de atividade da `dim_clients` leem da fato (D19). A `dim_clients` lê de duas fontes: `stg_clients` para o cadastro e `fact_transactions` para as métricas de atividade. É isso que mantém na dimensão os 15 clientes que nunca operaram.
 
 ---
 
@@ -147,7 +147,7 @@ O enunciado pede duas coisas: que `dbt test` passe e que o teste singular detect
 - **Testes sobre a fonte** (nos seeds e o teste singular), com severidade `warn`. Eles apontam problemas nos dados recebidos, que não posso corrigir sem inventar informação. O teste roda, conta as linhas, mostra o aviso e **grava as linhas encontradas** numa tabela de auditoria.
 - **Testes sobre os meus modelos** (staging, intermediate e marts), com severidade `error`. São o contrato do que eu entrego, e todos passam.
 
-O raciocínio completo, com as alternativas consideradas, está em [decisoes.md](decisoes.md#d3-severidade-do-teste-singular-a-decisão-central).
+O raciocínio completo, com as alternativas consideradas, está em [decisoes.md](decisoes.md#d8-severidade-do-teste-singular-a-decisão-central).
 
 #### Ver as linhas que o teste singular encontrou
 
@@ -250,8 +250,8 @@ Cada decisão, com o motivo e as alternativas, está em **[decisoes.md](decisoes
 - **Posições negativas não são filtradas** no mart: filtrá-las faria o teste singular passar escondendo o problema.
 - **Incremental com janela de 3 dias** e `unique_key`: a janela pega transações atrasadas, e a chave com `delete+insert` evita duplicar ao reprocessar.
 - **Contratos** nos marts: nomes e tipos das colunas são garantidos no build.
-- **Marts leem da fato (estilo Kimball):** o portfólio e as métricas de atividade da `dim_clients` agregam a `fact_transactions`, a fonte única das transações publicadas. Em troca, herdam qualquer desvio do incremental (D22).
-- **Clientes duplicados viram uma linha só** (o registro mais completo), o que equivale a um **SCD tipo 1**: a dimensão guarda só o estado atual. Em produção, se o histórico importasse (um cliente que muda de cidade), eu usaria **SCD tipo 2** com `dbt snapshot` (`valid_from`/`valid_to`) e uma **surrogate key** no lugar do `client_id` original. Não implementei porque o CSV é uma foto única, sem versões para guardar. O D10 mostra o cenário completo: o C6 em duas versões, o snapshot, a surrogate key por versão e o join da fato pela versão vigente.
+- **Marts leem da fato (estilo Kimball):** o portfólio e as métricas de atividade da `dim_clients` agregam a `fact_transactions`, a fonte única das transações publicadas. Em troca, herdam qualquer desvio do incremental (D19).
+- **Clientes duplicados viram uma linha só** (o registro mais completo), o que equivale a um **SCD tipo 1**: a dimensão guarda só o estado atual. Em produção, se o histórico importasse (um cliente que muda de cidade), eu usaria **SCD tipo 2** com `dbt snapshot` (`valid_from`/`valid_to`) e uma **surrogate key** no lugar do `client_id` original. Não implementei porque o CSV é uma foto única, sem versões para guardar. A D14 do `decisoes.md` mostra o cenário completo: o C6 em duas versões, o snapshot, a surrogate key por versão e o join da fato pela versão vigente.
 
 ### Alternativas prontas para testar
 
